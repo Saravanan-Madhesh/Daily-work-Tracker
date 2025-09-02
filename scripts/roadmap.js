@@ -1319,7 +1319,12 @@ class RoadmapManager {
             </div>
         `;
         
-        app.showModal(modalContent);
+        const modal = app.showModal(modalContent);
+        
+        // Add specific class for project config modal styling
+        if (modal) {
+            modal.classList.add('project-config-modal');
+        }
         
         // Set up date input validation
         this.setupDateValidation();
