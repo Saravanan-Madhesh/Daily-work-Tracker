@@ -23,8 +23,9 @@ A local web application for Team Leaders (TLs) and team members to track daily w
 - **Features**:
   - Pre-defined checklist items (e.g., "Validate Azure task")
   - Checkbox functionality for completion tracking
-  - Automatic reset at midnight/day change
+  - Automatic reset checked to unchecked at midnight/day change
   - Configurable checklist items
+  - Checklist items carry forward to next day, need possiblity to user can add or remove further. 
 - **Examples**:
   - [ ] Support Handling
   - [ ] Customer Feedback Handling  

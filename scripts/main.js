@@ -238,6 +238,18 @@ class DailyWorkTracker {
         // Keyboard shortcuts
         document.addEventListener('keydown', this.handleKeyboardShortcuts.bind(this));
 
+        // Configure Project button
+        const configureProjectBtn = document.getElementById('configureProject');
+        if (configureProjectBtn) {
+            configureProjectBtn.addEventListener('click', () => {
+                if (window.RoadmapManager) {
+                    RoadmapManager.showProjectConfig();
+                } else {
+                    this.showError('Roadmap manager not available');
+                }
+            });
+        }
+
         // Create Journal button
         const createJournalBtn = document.getElementById('createJournal');
         if (createJournalBtn) {
@@ -521,29 +533,156 @@ class DailyWorkTracker {
     /**
      * Show settings modal
      */
-    showSettings() {
+    async showSettings() {
+        // Get current settings and storage info
+        const settings = await StorageManager.get('app_settings') || {};
+        const storageStats = await this.getStorageStats();
+        
         const settingsContent = `
             <div class="modal-header">
-                <h3 class="modal-title">Settings</h3>
+                <h3 class="modal-title">⚙️ Application Settings</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Theme</label>
-                    <select class="form-select" id="themeSelect">
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="auto">Auto</option>
-                    </select>
+            <div class="modal-body settings-modal">
+                <!-- Theme Settings -->
+                <div class="settings-section">
+                    <h4>🎨 Appearance</h4>
+                    <div class="form-group">
+                        <label class="form-label">Theme</label>
+                        <select class="form-select" id="themeSelect">
+                            <option value="light" ${settings.theme === 'light' ? 'selected' : ''}>☀️ Light</option>
+                            <option value="dark" ${settings.theme === 'dark' ? 'selected' : ''}>🌙 Dark</option>
+                            <option value="auto" ${settings.theme === 'auto' || !settings.theme ? 'selected' : ''}>🔄 Auto</option>
+                        </select>
+                        <small class="form-help">Choose your preferred color scheme</small>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Daily Reset Time</label>
-                    <input type="time" class="form-input" id="resetTimeInput" value="00:00">
+
+                <!-- Daily Reset Settings -->
+                <div class="settings-section">
+                    <h4>⏰ Daily Reset</h4>
+                    <div class="form-group">
+                        <label class="form-label">Daily Reset Time</label>
+                        <input type="time" class="form-input" id="resetTimeInput" 
+                               value="${settings.resetTime || '00:00'}">
+                        <small class="form-help">Time when daily checklist resets (24-hour format)</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="autoReset" ${settings.autoReset !== false ? 'checked' : ''}> 
+                            Enable automatic daily reset
+                        </label>
+                        <small class="form-help">Automatically reset checklist items each day</small>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">
-                        <input type="checkbox" id="enableNotifications"> Enable Notifications
-                    </label>
+
+                <!-- Notification Settings -->
+                <div class="settings-section">
+                    <h4>🔔 Notifications</h4>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="enableNotifications" ${settings.notifications ? 'checked' : ''}> 
+                            Enable browser notifications
+                        </label>
+                        <small class="form-help">Get notified about completed tasks and daily resets</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="enableSoundNotifications" ${settings.soundNotifications ? 'checked' : ''}> 
+                            Enable sound notifications
+                        </label>
+                        <small class="form-help">Play sounds for task completion and alerts</small>
+                    </div>
+                </div>
+
+                <!-- Data Storage Information -->
+                <div class="settings-section">
+                    <h4>💾 Data Storage</h4>
+                    <div class="storage-info-box">
+                        <div class="storage-location">
+                            <div class="storage-label">📍 Storage Location:</div>
+                            <div class="storage-path">Browser LocalStorage & IndexedDB</div>
+                            <div class="storage-details">
+                                Data is stored locally in your browser's storage system. This ensures:
+                                <ul>
+                                    <li>✅ Complete privacy - data never leaves your device</li>
+                                    <li>✅ Fast performance - no network requests needed</li>
+                                    <li>✅ Works offline - no internet connection required</li>
+                                    <li>⚠️ Browser-specific - data tied to this browser/device</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="storage-stats">
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <div class="stat-value">${storageStats.totalItems}</div>
+                                    <div class="stat-label">Total Items</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${storageStats.dataSize}</div>
+                                    <div class="stat-label">Data Size</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${storageStats.lastBackup || 'Never'}</div>
+                                    <div class="stat-label">Last Backup</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="storage-actions">
+                        <button type="button" class="btn btn-outline" onclick="app.exportAllData()">
+                            📤 Export All Data
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="app.importData()">
+                            📥 Import Data
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="app.clearStorageData()">
+                            🗑️ Clear All Data
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div class="settings-section">
+                    <h4>🔧 Advanced</h4>
+                    <div class="form-group">
+                        <label class="form-label">Data Retention (days)</label>
+                        <input type="number" class="form-input" id="dataRetentionDays" 
+                               value="${settings.dataRetentionDays || 30}" min="7" max="365">
+                        <small class="form-help">How long to keep completed items (7-365 days)</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="enableDebugMode" ${settings.debugMode ? 'checked' : ''}> 
+                            Enable debug mode
+                        </label>
+                        <small class="form-help">Show additional logging in browser console</small>
+                    </div>
+                </div>
+
+                <!-- Application Info -->
+                <div class="settings-section">
+                    <h4>ℹ️ Application Information</h4>
+                    <div class="app-info">
+                        <div class="info-row">
+                            <span class="info-label">Version:</span>
+                            <span class="info-value">1.0.0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Built:</span>
+                            <span class="info-value">${new Date().toLocaleDateString()}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Browser:</span>
+                            <span class="info-value">${navigator.userAgent.split(' ').pop()}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Platform:</span>
+                            <span class="info-value">${navigator.platform}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -553,6 +692,51 @@ class DailyWorkTracker {
         `;
         
         this.showModal(settingsContent);
+        
+        // Set up file input for import functionality
+        this.setupFileImport();
+    }
+
+    /**
+     * Get storage statistics
+     */
+    async getStorageStats() {
+        try {
+            let totalItems = 0;
+            let dataSize = 0;
+            
+            // Count items from different stores
+            const checklistItems = await StorageManager.getAllFromStore('checklistItems') || [];
+            const todos = await StorageManager.getAllFromStore('todos') || [];
+            const milestones = await StorageManager.getAllFromStore('milestones') || [];
+            const meetings = await StorageManager.getAllFromStore('meetings') || [];
+            
+            totalItems = checklistItems.length + todos.length + milestones.length + meetings.length;
+            
+            // Estimate data size
+            const allData = JSON.stringify({
+                checklistItems, todos, milestones, meetings
+            });
+            dataSize = (allData.length / 1024).toFixed(1) + ' KB';
+            
+            // Get last backup info
+            const lastBackup = await StorageManager.get('last_backup_date');
+            const lastBackupFormatted = lastBackup ? 
+                new Date(lastBackup).toLocaleDateString() : 'Never';
+            
+            return {
+                totalItems,
+                dataSize,
+                lastBackup: lastBackupFormatted
+            };
+        } catch (error) {
+            console.error('Error getting storage stats:', error);
+            return {
+                totalItems: 0,
+                dataSize: '0 KB',
+                lastBackup: 'Error'
+            };
+        }
     }
 
     /**
@@ -563,15 +747,250 @@ class DailyWorkTracker {
             const settings = {
                 theme: document.getElementById('themeSelect').value,
                 resetTime: document.getElementById('resetTimeInput').value,
-                notifications: document.getElementById('enableNotifications').checked
+                notifications: document.getElementById('enableNotifications').checked,
+                soundNotifications: document.getElementById('enableSoundNotifications').checked,
+                autoReset: document.getElementById('autoReset').checked,
+                dataRetentionDays: parseInt(document.getElementById('dataRetentionDays').value) || 30,
+                debugMode: document.getElementById('enableDebugMode').checked
             };
 
+            // Validate settings
+            if (settings.dataRetentionDays < 7 || settings.dataRetentionDays > 365) {
+                throw new Error('Data retention must be between 7 and 365 days');
+            }
+
+            // Validate reset time format
+            if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(settings.resetTime)) {
+                throw new Error('Invalid reset time format');
+            }
+
             await StorageManager.set('app_settings', settings);
+            
+            // Update daily reset time if changed
+            if (window.DailyResetManager) {
+                await DailyResetManager.updateResetTime(settings.resetTime);
+            }
+            
+            // Apply theme
+            this.applyTheme(settings.theme);
+            
             this.hideModal();
             this.showSuccess('Settings saved successfully!');
         } catch (error) {
             console.error('Failed to save settings:', error);
-            this.showError('Failed to save settings');
+            this.showError(`Failed to save settings: ${error.message}`);
+        }
+    }
+
+    /**
+     * Apply theme
+     */
+    applyTheme(theme) {
+        const body = document.body;
+        body.classList.remove('theme-light', 'theme-dark');
+        
+        if (theme === 'auto') {
+            // Use system preference
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            body.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
+        } else {
+            body.classList.add(`theme-${theme}`);
+        }
+    }
+
+    /**
+     * Export all application data
+     */
+    async exportAllData() {
+        try {
+            const exportData = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                application: 'Daily Work Tracker',
+                data: {
+                    settings: await StorageManager.get('app_settings') || {},
+                    projectConfig: await StorageManager.get('project_config') || null,
+                    checklistItems: await StorageManager.getAllFromStore('checklistItems') || [],
+                    todos: await StorageManager.getAllFromStore('todos') || [],
+                    milestones: await StorageManager.getAllFromStore('milestones') || [],
+                    meetings: await StorageManager.getAllFromStore('meetings') || [],
+                    journals: await StorageManager.getAllFromStore('journals') || []
+                }
+            };
+
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `daily-work-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            
+            // Update last backup date
+            await StorageManager.set('last_backup_date', new Date().toISOString());
+            
+            this.showSuccess('Data exported successfully!');
+        } catch (error) {
+            console.error('Failed to export data:', error);
+            this.showError('Failed to export data: ' + error.message);
+        }
+    }
+
+    /**
+     * Set up file import functionality
+     */
+    setupFileImport() {
+        // Create hidden file input
+        if (!this.fileInput) {
+            this.fileInput = document.createElement('input');
+            this.fileInput.type = 'file';
+            this.fileInput.accept = '.json';
+            this.fileInput.style.display = 'none';
+            document.body.appendChild(this.fileInput);
+        }
+        
+        this.fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.processImportFile(file);
+            }
+        };
+    }
+
+    /**
+     * Import data from file
+     */
+    importData() {
+        if (this.fileInput) {
+            this.fileInput.click();
+        } else {
+            this.showError('File import not available');
+        }
+    }
+
+    /**
+     * Process import file
+     */
+    async processImportFile(file) {
+        try {
+            const text = await file.text();
+            const importData = JSON.parse(text);
+            
+            // Validate import data structure
+            if (!importData.data || !importData.version) {
+                throw new Error('Invalid backup file format');
+            }
+            
+            // Show confirmation
+            const confirmMessage = `Import data from backup file?\n\nThis will:\n- Replace all current data\n- Cannot be undone\n\nBackup date: ${new Date(importData.exportDate).toLocaleString()}\n\nContinue?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Import data
+            const data = importData.data;
+            
+            // Clear existing data
+            await this.clearAllStorageData(false);
+            
+            // Import settings
+            if (data.settings) {
+                await StorageManager.set('app_settings', data.settings);
+            }
+            
+            // Import project config
+            if (data.projectConfig) {
+                await StorageManager.set('project_config', data.projectConfig);
+            }
+            
+            // Import data stores
+            const stores = ['checklistItems', 'todos', 'milestones', 'meetings', 'journals'];
+            
+            for (const store of stores) {
+                if (data[store] && Array.isArray(data[store])) {
+                    for (const item of data[store]) {
+                        await StorageManager.saveToStore(store, item);
+                    }
+                }
+            }
+            
+            this.hideModal();
+            this.showSuccess(`Data imported successfully! ${Object.keys(data).length} data types restored. Please refresh the page.`);
+            
+            // Refresh page after 3 seconds
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Failed to import data:', error);
+            this.showError('Failed to import data: ' + error.message);
+        }
+    }
+
+    /**
+     * Clear all storage data
+     */
+    async clearStorageData() {
+        const confirmMessage = 'Are you sure you want to clear ALL data?\n\nThis will permanently delete:\n- All checklist items\n- All todos\n- All milestones\n- All meetings\n- Project configuration\n- Application settings\n\nThis action cannot be undone!';
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        const doubleConfirm = 'Type "DELETE" to confirm permanent data deletion:';
+        const userInput = prompt(doubleConfirm);
+        
+        if (userInput !== 'DELETE') {
+            this.showError('Data deletion cancelled - incorrect confirmation');
+            return;
+        }
+        
+        await this.clearAllStorageData(true);
+    }
+
+    /**
+     * Clear all storage data (internal method)
+     */
+    async clearAllStorageData(showFeedback = true) {
+        try {
+            // Clear all IndexedDB stores
+            const stores = ['checklistItems', 'todos', 'milestones', 'meetings', 'journals'];
+            
+            for (const store of stores) {
+                await StorageManager.clearStore(store);
+            }
+            
+            // Clear localStorage
+            const localStorageKeys = [
+                'app_settings', 'project_config', 'last_reset_date', 
+                'last_reset_timestamp', 'reset_history', 'last_backup_date'
+            ];
+            
+            for (const key of localStorageKeys) {
+                await StorageManager.remove(key);
+            }
+            
+            if (showFeedback) {
+                this.hideModal();
+                this.showSuccess('All data cleared successfully! Page will refresh in 3 seconds.');
+                
+                // Refresh page after 3 seconds
+                setTimeout(() => {
+                    location.reload();
+                }, 3000);
+            }
+            
+        } catch (error) {
+            console.error('Failed to clear data:', error);
+            if (showFeedback) {
+                this.showError('Failed to clear data: ' + error.message);
+            }
+            throw error;
         }
     }
 

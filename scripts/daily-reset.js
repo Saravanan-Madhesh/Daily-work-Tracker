@@ -333,58 +333,74 @@ class DailyResetManager {
     static async resetDailyChecklistEnhanced() {
         try {
             const today = this.getCurrentDateString();
+            const yesterday = this.getYesterdayString();
             
-            // Get all template items (both global templates and custom recurring items)
-            const templates = await StorageManager.getAllFromStore('checklistItems') || [];
-            const templateItems = templates.filter(item => item.isTemplate);
-            const customItems = await StorageManager.get('checklist-custom-items') || [];
-            const recurringCustomItems = customItems.filter(item => item.recurring);
+            // Get all checklist items from storage
+            const allItems = await StorageManager.getAllFromStore('checklistItems') || [];
             
-            // Delete old non-template checklist items for current date
-            const oldItems = await StorageManager.getAllFromStore('checklistItems') || [];
-            const oldDailyItems = oldItems.filter(item => !item.isTemplate && item.date === today);
+            // Separate templates from daily items
+            const templates = allItems.filter(item => item.isTemplate);
+            const yesterdayItems = allItems.filter(item => !item.isTemplate && item.date === yesterday);
+            const todayItems = allItems.filter(item => !item.isTemplate && item.date === today);
             
-            for (const item of oldDailyItems) {
-                await StorageManager.deleteFromStore('checklistItems', item.id);
+            // Create set of template texts and existing daily items for today
+            const templateTexts = new Set(templates.map(t => t.text.toLowerCase()));
+            const existingTodayTexts = new Set(todayItems.map(t => t.text.toLowerCase()));
+            
+            // Reset all existing today items to unchecked (this handles carryforward from templates)
+            for (const item of todayItems) {
+                if (item.completed || item.completedAt) {
+                    item.completed = false;
+                    item.completedAt = null;
+                    item.updatedAt = new Date().toISOString();
+                    await StorageManager.saveToStore('checklistItems', item);
+                }
             }
             
-            // Create new checklist items from templates
-            const newItems = [];
-            
-            // From template items
-            for (const template of templateItems) {
-                const newItem = StorageManager.createChecklistModel({
-                    text: template.text,
-                    category: template.category || 'general',
-                    completed: false,
-                    date: today,
-                    templateId: template.id,
-                    isTemplate: false,
-                    order: template.order || 0
-                });
-                newItems.push(newItem);
+            // Add items from templates that don't already exist today
+            const newItemsFromTemplates = [];
+            for (const template of templates) {
+                // Only add if not already present for today
+                if (!existingTodayTexts.has(template.text.toLowerCase())) {
+                    const newItem = StorageManager.createChecklistModel({
+                        text: template.text,
+                        category: template.category || 'general',
+                        completed: false,
+                        date: today,
+                        templateId: template.id,
+                        isTemplate: false,
+                        order: template.order || 0
+                    });
+                    newItemsFromTemplates.push(newItem);
+                }
             }
             
-            // From custom recurring items
-            for (const customItem of recurringCustomItems) {
-                const newItem = StorageManager.createChecklistModel({
-                    text: customItem.text,
-                    category: customItem.category || 'general',
-                    completed: false,
-                    date: today,
-                    isCustom: true,
-                    recurring: true,
-                    isTemplate: false
-                });
-                newItems.push(newItem);
+            // Add items from yesterday that should carry forward but aren't templates
+            const newItemsFromYesterday = [];
+            for (const yesterdayItem of yesterdayItems) {
+                // Only carry forward non-template items that user created
+                if (!templateTexts.has(yesterdayItem.text.toLowerCase()) && 
+                    !existingTodayTexts.has(yesterdayItem.text.toLowerCase())) {
+                    const newItem = StorageManager.createChecklistModel({
+                        text: yesterdayItem.text,
+                        category: yesterdayItem.category || 'general',
+                        completed: false, // Reset to unchecked
+                        date: today,
+                        carriedFrom: yesterday,
+                        isTemplate: false,
+                        order: yesterdayItem.order || 0
+                    });
+                    newItemsFromYesterday.push(newItem);
+                }
             }
             
             // Save new items
-            for (const item of newItems) {
+            const allNewItems = [...newItemsFromTemplates, ...newItemsFromYesterday];
+            for (const item of allNewItems) {
                 await StorageManager.saveToStore('checklistItems', item);
             }
             
-            console.log(`Reset checklist with ${newItems.length} items for ${today}`);
+            console.log(`Reset checklist: ${todayItems.length} existing items reset to unchecked, ${allNewItems.length} new items added for ${today}`);
             
         } catch (error) {
             console.error('Error in enhanced checklist reset:', error);

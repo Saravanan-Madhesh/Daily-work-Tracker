@@ -137,6 +137,7 @@ class ChecklistManager {
     static createChecklistItemHTML(item, index) {
         const completedClass = item.completed ? 'completed' : '';
         const completedTime = item.completedAt ? new Date(item.completedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+        const carriedFromText = item.carriedFrom ? ` (carried from ${new Date(item.carriedFrom).toLocaleDateString()})` : '';
 
         return `
             <div class="checklist-item ${completedClass}" data-item-id="${item.id}">
@@ -147,8 +148,8 @@ class ChecklistManager {
                            onchange="ChecklistManager.toggleItemCompletion('${item.id}')">
                     
                     <div class="checklist-content">
-                        <div class="checklist-text">${this.escapeHtml(item.text)}</div>
-                        ${completedTime ? `<div class="completion-time">Completed at ${completedTime}</div>` : ''}
+                        <div class="checklist-text">${this.escapeHtml(item.text)}${carriedFromText}</div>
+                        ${completedTime ? `<div class="completion-time">✅ Completed at ${completedTime}</div>` : ''}
                     </div>
                 </div>
                 
@@ -156,8 +157,8 @@ class ChecklistManager {
                     <button class="checklist-edit" onclick="ChecklistManager.showEditItemModal('${item.id}')" title="Edit item">
                         ✏️
                     </button>
-                    <button class="checklist-delete" onclick="ChecklistManager.deleteItem('${item.id}')" title="Delete item">
-                        🗑️
+                    <button class="checklist-remove" onclick="ChecklistManager.deleteItem('${item.id}')" title="Remove item">
+                        ❌
                     </button>
                 </div>
             </div>
