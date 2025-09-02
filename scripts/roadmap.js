@@ -153,6 +153,16 @@ class RoadmapManager {
             // Load project configuration
             this.projectConfig = await StorageManager.get('project_config');
             
+            // Normalize project config to ensure name field exists
+            if (this.projectConfig) {
+                if (this.projectConfig.projectName && !this.projectConfig.name) {
+                    this.projectConfig.name = this.projectConfig.projectName;
+                }
+                if (!this.projectConfig.name && !this.projectConfig.projectName) {
+                    this.projectConfig.name = 'Project Roadmap';
+                }
+            }
+            
             // Load milestones
             this.milestones = await StorageManager.getAllFromStore('milestones') || [];
             
@@ -182,12 +192,24 @@ class RoadmapManager {
             if (endDateElement) {
                 endDateElement.textContent = `End: ${this.formatDateWithRelative(this.projectConfig.endDate)}`;
             }
+            
+            // Update section header title with project name
+            const sectionHeader = document.querySelector('#roadmap-section .section-header h2');
+            if (sectionHeader && this.projectConfig.name) {
+                sectionHeader.textContent = this.projectConfig.name;
+            }
         } else {
             if (startDateElement) {
                 startDateElement.textContent = 'Start: Not Set';
             }
             if (endDateElement) {
                 endDateElement.textContent = 'End: Not Set';
+            }
+            
+            // Reset section header to default
+            const sectionHeader = document.querySelector('#roadmap-section .section-header h2');
+            if (sectionHeader) {
+                sectionHeader.textContent = 'Project Roadmap';
             }
         }
         
@@ -940,7 +962,7 @@ class RoadmapManager {
             return;
         }
         
-        // Project title
+        // Project title - use the project name from config
         this.ctx.fillStyle = '#2d3748';
         this.ctx.font = 'bold 16px sans-serif';
         this.ctx.textAlign = 'center';
@@ -1231,26 +1253,26 @@ class RoadmapManager {
                 <h3 class="modal-title">${isExisting ? 'Edit' : 'Create'} Project Configuration</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body project-config-body">
                 ${projectStats}
                 
                 <div class="form-group">
                     <label class="form-label">Project Name *</label>
                     <input type="text" class="form-input" id="projectName" 
-                           value="${config.name || ''}" 
+                           value="${(config.name || config.projectName || '').replace(/"/g, '&quot;')}" 
                            placeholder="Enter project name (e.g., Website Redesign)">
                     <small class="form-help">A clear, descriptive name for your project</small>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Project Description</label>
-                    <textarea class="form-textarea" id="projectDescription" 
+                    <textarea class="form-input" id="projectDescription" 
                               placeholder="Describe your project goals, scope, and key deliverables..."
-                              rows="3">${config.description || ''}</textarea>
+                              rows="3">${(config.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
                     <small class="form-help">Optional: Provide context and objectives for your project</small>
                 </div>
                 
-                <div class="date-inputs">
+                <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Start Date *</label>
                         <input type="date" class="form-input" id="projectStartDate" 
@@ -1271,7 +1293,7 @@ class RoadmapManager {
                 
                 <div class="form-group">
                     <label class="form-label">Project Status</label>
-                    <select class="form-select" id="projectStatus">
+                    <select class="form-input" id="projectStatus">
                         <option value="planning" ${config.status === 'planning' ? 'selected' : ''}>📋 Planning</option>
                         <option value="active" ${config.status === 'active' || !config.status ? 'selected' : ''}>🚀 Active</option>
                         <option value="on-hold" ${config.status === 'on-hold' ? 'selected' : ''}>⏸️ On Hold</option>
@@ -1288,7 +1310,7 @@ class RoadmapManager {
                     </div>
                 ` : ''}
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer project-config-footer">
                 ${isExisting ? `<button class="btn btn-danger" onclick="RoadmapManager.showResetConfirmation()">Reset Project</button>` : ''}
                 <button class="btn btn-secondary" onclick="app.hideModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="RoadmapManager.saveProjectConfig()">
@@ -1373,8 +1395,20 @@ class RoadmapManager {
                 status: config.status
             });
             
-            await StorageManager.set('project_config', roadmapModel);
-            this.projectConfig = roadmapModel;
+            // Ensure the config has the name field for consistency
+            const finalConfig = {
+                ...roadmapModel,
+                name: roadmapModel.projectName || config.name,
+                description: config.description,
+                startDate: config.startDate,
+                endDate: config.endDate,
+                status: config.status,
+                createdAt: roadmapModel.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            await StorageManager.set('project_config', finalConfig);
+            this.projectConfig = finalConfig;
             
             // Adjust milestones if needed
             if (milestonesNeedAdjustment.length > 0) {
@@ -1390,7 +1424,9 @@ class RoadmapManager {
             const message = isExisting ? 'Project updated successfully!' : 'Project created successfully!';
             app.showSuccess(message);
             
-            console.log('Project configuration saved:', roadmapModel);
+            console.log('Project configuration saved:', finalConfig);
+            console.log('Config name:', finalConfig.name);
+            console.log('Config description:', finalConfig.description);
             
         } catch (error) {
             console.error('Failed to save project config:', error);

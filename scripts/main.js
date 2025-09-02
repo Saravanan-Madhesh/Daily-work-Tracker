@@ -489,10 +489,73 @@ class DailyWorkTracker {
     hideModal() {
         const modalContainer = document.getElementById('modalContainer');
         if (modalContainer) {
+            // Check if this is a settings modal and auto-save
+            const settingsModal = modalContainer.querySelector('.settings-modal');
+            if (settingsModal && !this._isClosingSettings) {
+                this.autoSaveSettings();
+            }
+            
             modalContainer.classList.remove('active');
             setTimeout(() => {
                 modalContainer.innerHTML = '';
             }, 300);
+        }
+    }
+
+    /**
+     * Close settings with explicit save
+     */
+    async closeSettingsWithSave() {
+        this._isClosingSettings = true;
+        await this.saveSettings();
+        this._isClosingSettings = false;
+    }
+
+    /**
+     * Auto-save settings when modal is closed
+     */
+    async autoSaveSettings() {
+        try {
+            // Check if settings elements exist
+            const themeSelect = document.getElementById('themeSelect');
+            if (!themeSelect) return; // Not a settings modal
+            
+            const settings = {
+                theme: document.getElementById('themeSelect').value,
+                resetTime: document.getElementById('resetTimeInput').value,
+                notifications: document.getElementById('enableNotifications').checked,
+                soundNotifications: document.getElementById('enableSoundNotifications').checked,
+                autoReset: document.getElementById('autoReset').checked,
+                dataRetentionDays: parseInt(document.getElementById('dataRetentionDays').value) || 30,
+                debugMode: document.getElementById('enableDebugMode').checked
+            };
+
+            // Validate settings
+            if (settings.dataRetentionDays < 7 || settings.dataRetentionDays > 365) {
+                settings.dataRetentionDays = 30; // Reset to default if invalid
+            }
+
+            // Validate reset time format
+            if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(settings.resetTime)) {
+                settings.resetTime = '00:00'; // Reset to default if invalid
+            }
+
+            await StorageManager.set('app_settings', settings);
+            
+            // Update daily reset time if changed
+            if (window.DailyResetManager) {
+                await DailyResetManager.updateResetTime(settings.resetTime);
+            }
+            
+            // Apply theme
+            this.applyTheme(settings.theme);
+            
+            // Show subtle success message
+            this.showSuccess('Settings saved automatically ✅');
+            
+        } catch (error) {
+            console.error('Failed to auto-save settings:', error);
+            this.showError('Failed to save settings automatically');
         }
     }
 
@@ -699,8 +762,10 @@ class DailyWorkTracker {
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="app.hideModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="app.saveSettings()">Save Settings</button>
+                <div class="settings-footer-info">
+                    <small class="text-muted">💡 Settings are saved automatically when you close this dialog</small>
+                </div>
+                <button class="btn btn-primary" onclick="app.closeSettingsWithSave()">Close & Save</button>
             </div>
         `;
         
