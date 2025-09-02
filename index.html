@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Daily Work Tracker</title>
+    <meta name="description" content="Track daily work progress with visual roadmap, checklists, todos, and meetings">
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/roadmap.css">
+    <link rel="stylesheet" href="styles/components.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">Daily Work Tracker</h1>
+                <div class="header-actions">
+                    <button id="createJournal" class="btn btn-primary">
+                        📊 Create Journal
+                    </button>
+                    <button id="settingsBtn" class="btn btn-secondary">
+                        ⚙️ Settings
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Sidebar Navigation -->
+            <aside class="sidebar">
+                <nav class="nav-menu">
+                    <ul>
+                        <li><a href="#roadmap" class="nav-link active">🛣️ Roadmap</a></li>
+                        <li><a href="#checklist" class="nav-link">✅ Daily Checklist</a></li>
+                        <li><a href="#todos" class="nav-link">📝 ToDos</a></li>
+                        <li><a href="#meetings" class="nav-link">🤝 Meetings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Content Area -->
+            <section class="content-area">
+                <!-- Roadmap Section -->
+                <div id="roadmap-section" class="content-section active">
+                    <div class="section-header">
+                        <h2>Project Roadmap</h2>
+                        <button id="configureProject" class="btn btn-outline">Configure Project</button>
+                    </div>
+                    <div class="roadmap-container">
+                        <canvas id="roadmapCanvas" class="roadmap-canvas"></canvas>
+                        <div class="roadmap-info">
+                            <div class="project-dates">
+                                <span class="start-date">Start: Not Set</span>
+                                <span class="current-date">Today: <span id="currentDate"></span></span>
+                                <span class="end-date">End: Not Set</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Milestone Management Section -->
+                        <div class="milestone-management">
+                            <div class="milestone-header">
+                                <h3>🏔️ Milestones</h3>
+                                <button id="addMilestoneBtn" class="btn btn-outline btn-small">+ Add Milestone</button>
+                            </div>
+                            <div id="milestoneList" class="milestone-list">
+                                <!-- Milestones will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Checklist Section -->
+                <div id="checklist-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Daily Checklist</h2>
+                        <div class="section-actions">
+                            <button id="checklistAnalytics" class="btn btn-secondary">📊 Analytics</button>
+                            <button id="addChecklistItem" class="btn btn-outline">+ Add Item</button>
+                        </div>
+                    </div>
+                    <div class="checklist-container">
+                        <div id="checklistItems" class="checklist-items"></div>
+                    </div>
+                </div>
+
+                <!-- ToDos Section -->
+                <div id="todos-section" class="content-section">
+                    <div class="section-header">
+                        <h2>ToDos</h2>
+                        <div class="section-actions">
+                            <button id="todoAnalytics" class="btn btn-secondary">📊 Analytics</button>
+                            <button id="advancedSearch" class="btn btn-secondary">🔍 Search</button>
+                            <button id="bulkActions" class="btn btn-secondary">⚡ Bulk Actions</button>
+                            <div class="action-divider"></div>
+                            <button id="backupTodos" class="btn btn-outline">💾 Backup</button>
+                            <button id="restoreTodos" class="btn btn-outline">📥 Restore</button>
+                            <button id="addTodo" class="btn btn-primary">+ Add Todo</button>
+                        </div>
+                    </div>
+                    <div class="todos-container">
+                        <div id="todoItems" class="todo-items"></div>
+                    </div>
+                </div>
+
+                <!-- Meetings Section -->
+                <div id="meetings-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Meetings</h2>
+                        <button id="addMeeting" class="btn btn-outline">+ Add Meeting</button>
+                    </div>
+                    <div class="meetings-container">
+                        <div id="meetingItems" class="meeting-items"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modalContainer" class="modal-container"></div>
+
+    <!-- JavaScript Files -->
+    <script src="scripts/storage.js"></script>
+    <script src="scripts/roadmap.js"></script>
+    <script src="scripts/daily-reset.js"></script>
+    <script src="scripts/checklist.js"></script>
+    <script src="scripts/todos.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>

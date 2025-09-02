@@ -1,0 +1,557 @@
+/* ===== ROADMAP SPECIFIC STYLES ===== */
+
+.roadmap-container {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin-bottom: 2rem;
+}
+
+.roadmap-canvas {
+    width: 100%;
+    height: 300px;
+    border: 3px solid #e2e8f0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.roadmap-canvas:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.roadmap-canvas:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Canvas loading state */
+.roadmap-canvas.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.roadmap-canvas.loading::after {
+    content: "Loading roadmap...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1rem 2rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #4a5568;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.roadmap-info {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.project-dates {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+}
+
+.start-date,
+.current-date,
+.end-date {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    background: white;
+    border: 1px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.start-date {
+    color: #059669;
+    border-color: #d1fae5;
+    background: #ecfdf5;
+}
+
+.start-date::before {
+    content: "🚀";
+    font-size: 1rem;
+}
+
+.current-date {
+    color: #3b82f6;
+    border-color: #dbeafe;
+    background: #eff6ff;
+    font-weight: 600;
+}
+
+.current-date::before {
+    content: "📅";
+    font-size: 1rem;
+}
+
+.end-date {
+    color: #dc2626;
+    border-color: #fecaca;
+    background: #fef2f2;
+}
+
+.end-date::before {
+    content: "🏁";
+    font-size: 1rem;
+}
+
+/* Roadmap Canvas Elements */
+.roadmap-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+    transform: translate(-50%, -100%);
+    margin-top: -0.5rem;
+}
+
+.roadmap-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Enhanced Milestone Management */
+.milestone-management {
+    margin-top: 2rem;
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.milestone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.milestone-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.btn-small {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.milestone-list {
+    display: grid;
+    gap: 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.milestone-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.milestone-item:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.milestone-item.completed {
+    background: #ecfdf5;
+    border-color: #10b981;
+    opacity: 0.9;
+}
+
+.milestone-item.overdue {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+
+.milestone-item.today {
+    background: #fffbeb;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.milestone-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.milestone-flag {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.milestone-details {
+    flex: 1;
+}
+
+.milestone-title {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.milestone-date {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.milestone-description {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-style: italic;
+    line-height: 1.3;
+}
+
+.milestone-actions {
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.milestone-item:hover .milestone-actions {
+    opacity: 1;
+}
+
+.milestone-edit,
+.milestone-delete {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.milestone-edit {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.milestone-edit:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+.milestone-delete {
+    background: #fecaca;
+    color: #dc2626;
+}
+
+.milestone-delete:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Empty state for milestones */
+.milestone-list .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #6b7280;
+}
+
+.milestone-list .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.milestone-list .empty-state-title {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #374151;
+}
+
+.milestone-list .empty-state-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Enhanced Project Configuration Modal */
+.project-config-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.project-stats {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.project-stats h4 {
+    margin: 0 0 1rem 0;
+    color: #374151;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #3b82f6;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.date-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-help {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.warning-section {
+    margin: 1rem 0;
+}
+
+.warning-box {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    color: #92400e;
+}
+
+.reset-warning {
+    background: #fee2e2;
+    border: 1px solid #ef4444;
+    border-radius: 6px;
+    padding: 1rem;
+    color: #991b1b;
+}
+
+.reset-warning h4 {
+    margin: 0 0 0.5rem 0;
+    color: #991b1b;
+}
+
+.reset-warning ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.reset-warning li {
+    margin-bottom: 0.25rem;
+}
+
+.reset-warning p {
+    margin: 0.75rem 0 0 0;
+    font-weight: 600;
+}
+
+.project-status {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+.project-status.not-configured {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+}
+
+.project-status.configured {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.project-status.overdue {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
+/* Modal enhancements */
+.modal {
+    max-width: 600px;
+}
+
+.modal-footer {
+    justify-content: space-between;
+}
+
+.modal-footer .btn:first-child {
+    margin-right: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .date-inputs {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .modal {
+        max-width: 95%;
+        margin: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .modal-footer .btn:first-child {
+        margin-right: 0;
+        order: 2;
+    }
+}
+
+/* Responsive Roadmap */
+@media (max-width: 768px) {
+    .roadmap-container {
+        padding: 1rem;
+    }
+    
+    .roadmap-canvas {
+        height: 200px;
+    }
+    
+    .project-dates {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .start-date,
+    .current-date,
+    .end-date {
+        justify-content: center;
+        text-align: center;
+    }
+    
+    .date-inputs {
+        grid-template-columns: 1fr;
+    }
+    
+    .milestone-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .milestone-actions {
+        align-self: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+    .roadmap-canvas {
+        height: 150px;
+    }
+    
+    .project-dates {
+        font-size: 0.75rem;
+    }
+    
+    .milestone-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+}
