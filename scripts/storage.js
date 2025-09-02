@@ -589,7 +589,7 @@ class StorageManager {
             time: data.time || '',
             date: data.date || this.getCurrentDateString(),
             description: data.description || '',
-            attendees: data.attendees || [],
+            attendees: data.attendees || '',  // Keep as string, not array
             completed: data.completed || false,
             notes: data.notes || '',
             notesUpdatedAt: data.notesUpdatedAt || null,

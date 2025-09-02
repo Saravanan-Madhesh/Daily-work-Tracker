@@ -13,6 +13,34 @@ class MeetingsManager {
     static async init() {
         console.log('Initializing Meetings Manager...');
         try {
+            // Wait for StorageManager to be ready
+            if (!window.StorageManager) {
+                console.log('Waiting for StorageManager to be available...');
+                let attempts = 0;
+                while (!window.StorageManager && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    attempts++;
+                }
+                
+                if (!window.StorageManager) {
+                    throw new Error('StorageManager not available after waiting');
+                }
+            }
+            
+            // Wait for StorageManager to be initialized
+            if (!StorageManager.isInitialized) {
+                console.log('Waiting for StorageManager to be initialized...');
+                let attempts = 0;
+                while (!StorageManager.isInitialized && attempts < 20) {
+                    await new Promise(resolve => setTimeout(resolve, 250));
+                    attempts++;
+                }
+                
+                if (!StorageManager.isInitialized) {
+                    throw new Error('StorageManager not initialized after waiting');
+                }
+            }
+            
             await this.loadMeetings();
             this.setupEventListeners();
             this.renderMeetings();
@@ -23,6 +51,12 @@ class MeetingsManager {
             console.log('Meetings Manager initialized successfully');
         } catch (error) {
             console.error('Error initializing Meetings Manager:', error);
+            // Show error to user but don't break the entire app
+            setTimeout(() => {
+                if (window.app) {
+                    window.app.showError('Failed to initialize meetings: ' + error.message);
+                }
+            }, 1000);
         }
     }
 
@@ -31,14 +65,22 @@ class MeetingsManager {
      */
     static async loadMeetings() {
         try {
-            const today = DailyResetManager.getCurrentDateString();
+            // Check if StorageManager is available and initialized
+            if (!window.StorageManager || !StorageManager.isInitialized) {
+                console.warn('StorageManager not available or not initialized, using empty meetings array');
+                this.meetings = [];
+                return;
+            }
+            
+            // Use a safer method to get current date
+            const today = new Date().toISOString().split('T')[0];
             
             // Load today's meetings
             const todayMeetings = await StorageManager.getAllFromStore('meetings', 'date', today) || [];
             
-            // Load upcoming meetings (next 3 days)
+            // Load upcoming meetings (next 7 days to show more meetings)
             const upcomingMeetings = [];
-            for (let i = 1; i <= 3; i++) {
+            for (let i = 1; i <= 7; i++) {
                 const futureDate = new Date();
                 futureDate.setDate(futureDate.getDate() + i);
                 const futureDateString = futureDate.toISOString().split('T')[0];
@@ -68,27 +110,50 @@ class MeetingsManager {
      * Setup event listeners
      */
     static setupEventListeners() {
-        const addMeetingBtn = document.getElementById('addMeeting');
-        if (addMeetingBtn) {
-            addMeetingBtn.addEventListener('click', () => this.showAddMeetingModal());
-        }
-
-        const analyticsBtn = document.getElementById('meetingAnalytics');
-        if (analyticsBtn) {
-            analyticsBtn.addEventListener('click', () => this.showAnalyticsModal());
-        }
-
-        const searchBtn = document.getElementById('meetingSearch');
-        if (searchBtn) {
-            searchBtn.addEventListener('click', () => this.showSearchModal());
-        }
-
-        // Handle escape key to close modals
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeAllModals();
+        try {
+            const addMeetingBtn = document.getElementById('addMeeting');
+            if (addMeetingBtn) {
+                addMeetingBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showAddMeetingModal();
+                });
+                console.log('Add meeting button listener attached');
+            } else {
+                console.warn('Add meeting button not found in DOM');
             }
-        });
+
+            const analyticsBtn = document.getElementById('meetingAnalytics');
+            if (analyticsBtn) {
+                analyticsBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showAnalyticsModal();
+                });
+                console.log('Meeting analytics button listener attached');
+            } else {
+                console.warn('Meeting analytics button not found in DOM');
+            }
+
+            const searchBtn = document.getElementById('meetingSearch');
+            if (searchBtn) {
+                searchBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showSearchModal();
+                });
+                console.log('Meeting search button listener attached');
+            } else {
+                console.warn('Meeting search button not found in DOM');
+            }
+
+            // Handle escape key to close modals
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.closeAllModals();
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error setting up event listeners:', error);
+        }
     }
 
     /**
@@ -318,7 +383,7 @@ class MeetingsManager {
         const modalTitle = isEditing ? 'Edit Meeting' : 'Add Meeting';
 
         const modalHTML = `
-            <div class="modal-backdrop active">
+            <div class="modal-backdrop active" onclick="if(event.target === this) MeetingsManager.closeModal()">
                 <div class="modal meeting-modal">
                     <div class="modal-header">
                         <h3>${modalTitle}</h3>
@@ -355,16 +420,16 @@ class MeetingsManager {
                                 <div class="notes-templates">
                                     <label class="template-label">Quick Templates:</label>
                                     <div class="template-buttons-inline">
-                                        <button type="button" class="template-btn-small" onclick="MeetingsManager.applyMeetingTemplate('standup')">
+                                        <button type="button" class="btn btn-outline btn-small" onclick="MeetingsManager.applyMeetingTemplate('standup')">
                                             📋 Standup
                                         </button>
-                                        <button type="button" class="template-btn-small" onclick="MeetingsManager.applyMeetingTemplate('client-meeting')">
+                                        <button type="button" class="btn btn-outline btn-small" onclick="MeetingsManager.applyMeetingTemplate('client-meeting')">
                                             👥 Client
                                         </button>
-                                        <button type="button" class="template-btn-small" onclick="MeetingsManager.applyMeetingTemplate('one-on-one')">
+                                        <button type="button" class="btn btn-outline btn-small" onclick="MeetingsManager.applyMeetingTemplate('one-on-one')">
                                             🗣️ 1:1
                                         </button>
-                                        <button type="button" class="template-btn-small" onclick="MeetingsManager.applyMeetingTemplate('sprint-planning')">
+                                        <button type="button" class="btn btn-outline btn-small" onclick="MeetingsManager.applyMeetingTemplate('sprint-planning')">
                                             📊 Planning
                                         </button>
                                     </div>
@@ -388,8 +453,16 @@ class MeetingsManager {
             </div>
         `;
 
-        const container = document.getElementById('modalContainer');
-        container.innerHTML = modalHTML;
+        // Remove any existing modal
+        const existingModal = document.querySelector('.modal-backdrop');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to body
+        const modalElement = document.createElement('div');
+        modalElement.innerHTML = modalHTML;
+        document.body.appendChild(modalElement.firstElementChild);
 
         // Setup form submission
         const form = document.getElementById('meetingForm');
@@ -425,8 +498,8 @@ class MeetingsManager {
 
         // Validate data
         const validation = StorageManager.validateMeetingData(meetingData);
-        if (validation.length > 0) {
-            alert('Please fix the following errors:\n' + validation.join('\n'));
+        if (!validation.isValid) {
+            alert('Please fix the following errors:\n' + validation.errors.join('\n'));
             return;
         }
 
@@ -495,7 +568,7 @@ class MeetingsManager {
         if (!meeting) return;
 
         const modalHTML = `
-            <div class="modal-backdrop active">
+            <div class="modal-backdrop active" onclick="if(event.target === this) MeetingsManager.closeNotesModal()">
                 <div class="modal notes-modal enhanced-notes">
                     <div class="modal-header">
                         <h3>📝 Meeting Notes</h3>
@@ -618,12 +691,21 @@ class MeetingsManager {
             </div>
         `;
 
-        const container = document.getElementById('modalContainer');
-        container.innerHTML = modalHTML;
+        // Remove any existing modal
+        const existingModal = document.querySelector('.modal-backdrop');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to body
+        const modalElement = document.createElement('div');
+        modalElement.innerHTML = modalHTML;
+        const modalBackdrop = modalElement.firstElementChild;
+        document.body.appendChild(modalBackdrop);
 
         this.setupNotesModal(meeting);
         
-        this.notesModal = container.querySelector('.modal-backdrop');
+        this.notesModal = modalBackdrop;
     }
 
     /**
@@ -1113,8 +1195,15 @@ Generated by Daily Work Tracker`;
      * Close meeting modal
      */
     static closeModal() {
-        const container = document.getElementById('modalContainer');
-        container.innerHTML = '';
+        const modal = document.querySelector('.modal-backdrop');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                if (modal.parentElement) {
+                    modal.remove();
+                }
+            }, 300);
+        }
         this.currentEditingId = null;
     }
 
@@ -1485,7 +1574,7 @@ Generated by Daily Work Tracker`;
      */
     static showSearchModal() {
         const modalHTML = `
-            <div class="modal-backdrop active">
+            <div class="modal-backdrop active" onclick="if(event.target === this) MeetingsManager.closeModal()">
                 <div class="modal search-modal">
                     <div class="modal-header">
                         <h3>🔍 Advanced Meeting Search</h3>
@@ -1550,8 +1639,16 @@ Generated by Daily Work Tracker`;
             </div>
         `;
         
-        const container = document.getElementById('modalContainer');
-        container.innerHTML = modalHTML;
+        // Remove any existing modal
+        const existingModal = document.querySelector('.modal-backdrop');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to body
+        const modalElement = document.createElement('div');
+        modalElement.innerHTML = modalHTML;
+        document.body.appendChild(modalElement.firstElementChild);
         
         // Set up form submission
         const form = document.getElementById('searchForm');
@@ -1707,7 +1804,7 @@ Generated by Daily Work Tracker`;
         const { analytics } = history;
         
         const modalHTML = `
-            <div class="modal-backdrop active">
+            <div class="modal-backdrop active" onclick="if(event.target === this) MeetingsManager.closeModal()">
                 <div class="modal analytics-modal">
                     <div class="modal-header">
                         <h3>📊 Meeting Analytics (Last 30 Days)</h3>
@@ -1794,8 +1891,16 @@ Generated by Daily Work Tracker`;
             </div>
         `;
         
-        const container = document.getElementById('modalContainer');
-        container.innerHTML = modalHTML;
+        // Remove any existing modal
+        const existingModal = document.querySelector('.modal-backdrop');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to body
+        const modalElement = document.createElement('div');
+        modalElement.innerHTML = modalHTML;
+        document.body.appendChild(modalElement.firstElementChild);
     }
 
     /**
@@ -1864,12 +1969,8 @@ Generated by Daily Work Tracker - Meeting Analytics`;
     }
 }
 
-// Initialize when DOM is loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => MeetingsManager.init());
-} else {
-    MeetingsManager.init();
-}
-
-// Export for use in other modules
+// Make MeetingsManager available immediately
 window.MeetingsManager = MeetingsManager;
+
+// Don't auto-initialize - let main.js handle initialization
+console.log('MeetingsManager class loaded and available');

@@ -390,6 +390,17 @@ class DailyWorkTracker {
      * Initialize application modules
      */
     async initializeModules() {
+        // Initialize DailyResetManager first since other modules depend on it
+        try {
+            if (window.DailyResetManager && typeof window.DailyResetManager.init === 'function') {
+                await window.DailyResetManager.init();
+                console.log('DailyResetManager initialized successfully');
+            }
+        } catch (error) {
+            console.error('Failed to initialize DailyResetManager:', error);
+        }
+        
+        // Initialize other modules
         const modules = ['RoadmapManager', 'ChecklistManager', 'TodosManager', 'MeetingsManager'];
         
         for (const moduleName of modules) {
@@ -399,6 +410,8 @@ class DailyWorkTracker {
                     console.log(`${moduleName} initialized successfully`);
                 } else if (moduleName === 'TodosManager') {
                     console.log(`${moduleName} will be loaded when todos.js is included`);
+                } else {
+                    console.log(`${moduleName} not available or init method not found`);
                 }
             } catch (error) {
                 console.error(`Failed to initialize ${moduleName}:`, error);
