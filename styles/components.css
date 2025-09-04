@@ -61,8 +61,8 @@
     gap: 0.75rem;
 }
 
-/* Enhanced Progress Bar */
-.progress-bar {
+/* Enhanced Progress Bar Container */
+.progress-bar-container {
     background: #f1f5f9;
     border-radius: 8px;
     padding: 1rem;
@@ -94,6 +94,8 @@
     background: #e2e8f0;
     border-radius: 4px;
     overflow: hidden;
+    position: relative;
+    width: 100%;
 }
 
 .progress-fill {
@@ -102,6 +104,8 @@
     border-radius: 4px;
     transition: width 0.5s ease;
     position: relative;
+    width: 0%;
+    min-width: 0;
 }
 
 .progress-fill::after {
@@ -113,6 +117,7 @@
     bottom: 0;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
     animation: shimmer 2s infinite;
+    border-radius: 4px;
 }
 
 @keyframes shimmer {
@@ -4634,7 +4639,8 @@
     margin-bottom: 16px;
 }
 
-.progress-bar {
+/* Export Progress Bar (separate from checklist) */
+.export-progress .progress-bar {
     width: 100%;
     height: 8px;
     background-color: #e9ecef;
@@ -4642,7 +4648,7 @@
     overflow: hidden;
 }
 
-.progress-fill {
+.export-progress .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #007bff, #0056b3);
     border-radius: 4px;
@@ -4952,7 +4958,7 @@ select#exportFormat option[value="html"]::before {
     margin-bottom: 1rem;
 }
 
-.export-modal .progress-bar {
+.export-modal .export-progress .progress-bar {
     width: 100%;
     height: 10px;
     background: #e9ecef;
@@ -4961,7 +4967,7 @@ select#exportFormat option[value="html"]::before {
     margin-bottom: 0.75rem;
 }
 
-.export-modal .progress-fill {
+.export-modal .export-progress .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #007bff, #0056b3);
     border-radius: 5px;

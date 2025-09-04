@@ -599,7 +599,7 @@ class ChecklistManager {
             const progressBar = this.createProgressBar(progressPercent, completedItems, totalItems);
             
             // Remove existing progress bar
-            const existingBar = container.querySelector('.progress-bar');
+            const existingBar = container.querySelector('.progress-bar-container');
             if (existingBar) {
                 existingBar.remove();
             }
@@ -664,7 +664,7 @@ class ChecklistManager {
      */
     static createProgressBar(percent, completed, total) {
         return `
-            <div class="progress-bar">
+            <div class="progress-bar-container">
                 <div class="progress-header">
                     <span class="progress-text">Progress: ${completed} of ${total} completed</span>
                     <span class="progress-percent">${percent}%</span>
