@@ -64,6 +64,9 @@ Daily Work Tracker is a **privacy-first**, **offline-capable** productivity appl
 - **Track Progress:** Watch the car animation move as time progresses
 - **Visual Status:** See color-coded milestones (completed, upcoming, overdue)
 
+<img width="1046" height="432" alt="image" src="https://github.com/user-attachments/assets/5bec05bd-71ec-4d6d-93a6-19f8e496ce03" />
+<img width="480" height="630" alt="image" src="https://github.com/user-attachments/assets/c0b1a2d9-ed55-477b-9ffb-420a7b76ef57" />
+
 **Best Practices:**
 - Set realistic project timelines
 - Add major milestones at key project phases
@@ -86,6 +89,9 @@ Daily Work Tracker is a **privacy-first**, **offline-capable** productivity appl
 - Check items throughout the day
 - Review completion analytics weekly
 
+<img width="1096" height="431" alt="image" src="https://github.com/user-attachments/assets/7d37d748-b6a4-4300-a809-069cc6fb829d" />
+
+
 ### 📝 Todo Management
 
 **Purpose:** Advanced task management with priority and carryforward logic
@@ -106,6 +112,8 @@ Daily Work Tracker is a **privacy-first**, **offline-capable** productivity appl
 - **Analytics:** Detailed completion statistics and trends
 - **Search:** Find todos by text, category, or date
 - **Export/Import:** Backup and restore todo data
+
+<img width="1116" height="687" alt="image" src="https://github.com/user-attachments/assets/7a68b7d8-5d9f-4547-b21b-955be70dcb96" />
 
 ### 🤝 Meeting Management
 
@@ -129,6 +137,8 @@ Daily Work Tracker is a **privacy-first**, **offline-capable** productivity appl
 - Auto-save functionality
 - Character and word counting
 
+<img width="1147" height="716" alt="image" src="https://github.com/user-attachments/assets/3614ad11-f60d-40be-aa17-08c26b036ce6" />
+
 ### 📊 Analytics & Insights
 
 **Purpose:** Track productivity patterns and identify improvement opportunities
@@ -141,6 +151,16 @@ Daily Work Tracker is a **privacy-first**, **offline-capable** productivity appl
 
 ---
 
+### Exporting Journal
+- Day to day (Current date) works can be exported as journal
+- Live preview mode
+- Can export as .txt or .html
+- It helps to do not missout details in journal.
+- Improve journal readability and tracking.  
+
+<img width="591" height="775" alt="image" src="https://github.com/user-attachments/assets/75bfc65f-28c3-467d-a542-d49378c2f048" />
+
+
 ## ⌨️ Keyboard Shortcuts
 
 ### Global Shortcuts
@@ -151,12 +171,12 @@ Daily Work Tracker is a **privacy-first**, **offline-capable** productivity appl
 - **Ctrl/Cmd + J** - Export Journal
 - **Escape** - Close any open modal
 
-### Todo Management
+### Todo Management [Upcoming]
 - **Ctrl/Cmd + N** - Add new todo (when in todos section)
 - **Ctrl/Cmd + F** - Open advanced search
 - **Ctrl/Cmd + B** - Open bulk actions
 
-### Meeting Notes
+### Meeting Notes [Upcoming]
 - **Ctrl/Cmd + S** - Save notes
 - **Ctrl/Cmd + B** - Insert bullet point
 - **Ctrl/Cmd + L** - Insert numbered list
