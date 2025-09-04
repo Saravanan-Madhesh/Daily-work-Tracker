@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Journal Format</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-output { background: #f5f5f5; padding: 15px; border-radius: 5px; white-space: pre-line; }
+    </style>
+</head>
+<body>
+    <h1>Test Journal Formatter</h1>
+    <button onclick="testJournalFormat()">Test Simple Format</button>
+    <h2>Output:</h2>
+    <div id="output" class="test-output"></div>
+
+    <script>
+        // Simple test data
+        const testData = {
+            checklist: {
+                items: [
+                    { text: "Support Handling", completed: true },
+                    { text: "Customer Feedback Handling", completed: false },
+                    { text: "Bug Fixes / Customer Bug Fixes", completed: true },
+                    { text: "Peer Test", completed: true }
+                ]
+            },
+            todos: [
+                { text: "Validate RTE control", completed: true },
+                { text: "Ensure figma for speech to text control", completed: true },
+                { text: "Incomplete task", completed: false }
+            ],
+            meetings: [
+                {
+                    time: "3:00 pm",
+                    title: "Flutter Support",
+                    completed: true,
+                    notes: "Discussed column thin support solution\nAction taken as to consider bug fix"
+                },
+                {
+                    time: "11:30",
+                    title: "Sync times meeting", 
+                    completed: true,
+                    notes: "Attended and gets known about the current status of company projects"
+                }
+            ]
+        };
+
+        // Simple formatter function
+        function generateSimpleJournal(data) {
+            let output = '';
+            
+            // Date header
+            const today = new Date();
+            const dateStr = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+            output += `Date: ${dateStr}\n`;
+            
+            // Daily Checklist
+            if (data.checklist && data.checklist.items && data.checklist.items.length > 0) {
+                output += `Daily Checklist:\n`;
+                data.checklist.items.forEach(item => {
+                    const status = item.completed ? '[x]' : '[ ]';
+                    output += `${status} ${item.text}\n`;
+                });
+            }
+            
+            // Today - ToDos (only completed)
+            const completedTodos = data.todos ? data.todos.filter(todo => todo.completed) : [];
+            if (completedTodos.length > 0) {
+                output += `Today - ToDos:\n`;
+                completedTodos.forEach(todo => {
+                    output += `[x] ${todo.text}\n`;
+                });
+            }
+            
+            // Meetings (only completed with notes)
+            const completedMeetings = data.meetings ? data.meetings.filter(meeting => meeting.completed && meeting.notes) : [];
+            if (completedMeetings.length > 0) {
+                output += `Meetings:\n`;
+                completedMeetings.forEach(meeting => {
+                    output += `${meeting.time} ${meeting.title}\n`;
+                    if (meeting.notes) {
+                        output += `Meeting notes:\n`;
+                        const noteLines = meeting.notes.split('\n');
+                        noteLines.forEach(line => {
+                            if (line.trim()) {
+                                output += `- ${line.trim()}\n`;
+                            }
+                        });
+                    }
+                });
+            }
+            
+            return output;
+        }
+
+        function testJournalFormat() {
+            const formatted = generateSimpleJournal(testData);
+            document.getElementById('output').textContent = formatted;
+            console.log('Generated journal:', formatted);
+        }
+    </script>
+</body>
+</html>

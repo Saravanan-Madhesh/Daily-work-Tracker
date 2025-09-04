@@ -275,50 +275,140 @@ Building a local web application for tracking daily work with visual roadmap, ch
 
 ---
 
-## 📊 **PHASE 6: Journal Export System**
+## 📊 **PHASE 6: Daily File System & Auto-Sync**
 
-### Task 6.1: File System Access Implementation ✅ **COMPLETED**
-- [x] Implement File System Access API integration
-- [x] Create file picker for save location
-- [x] Add error handling for file operations
-- [x] Test file permissions and security
-- [x] Handle file system API browser support
+### Task 6.1: Daily File Creation System 🚧 **NEEDS REWORK**
+- [ ] Implement daily text file creation (one file per day)
+- [ ] Create folder structure configuration for user-specified directory
+- [ ] Add File System Access API for folder permission and access
+- [ ] Generate unique daily filenames (e.g., `2025-09-02_daily-tracker.txt`)
+- [ ] Handle file creation with proper error handling
+- [ ] Add initial file structure with project status and daily data
 
-**Files Created/Modified:**
-- `scripts/file-export.js` ✅ (Comprehensive file export system with File System Access API)
-- `styles/components.css` ✅ (Enhanced with export modal and toast notification styling)
-- `index.html` ✅ (Added file export script reference)
+**New Requirements:**
+- **Daily File Format:** `YYYY-MM-DD_daily-tracker.txt`
+- **User Folder Selection:** Allow users to choose local folder for daily files
+- **File Content:** Project status, daily checklist, current todos, meetings
 
-**Completed Time:** 5 hours ✅
+**Files to Rework:**
+- `scripts/daily-file-manager.js` (New - replaces file-export.js functionality)
+- `scripts/auto-sync.js` (New)
+- `styles/components.css` (Update export UI to folder selection)
+- `index.html` (Update export controls)
 
-### Task 6.2: Journal Data Formatting ✅ **COMPLETED**
-- [x] Create journal text formatting functions
-- [x] Implement structured data export
-- [x] Add date formatting and timezone handling
-- [x] Create template-based export system
-- [x] Add custom export format options
+**Estimated Time:** 6 hours
 
-**Files Created/Modified:**
-- `scripts/journal-formatter.js` ✅ (Comprehensive journal formatting system with templates)
-- `scripts/file-export.js` ✅ (Enhanced with advanced formatting integration)
-- `styles/components.css` ✅ (Added formatting options styling)
-- `index.html` ✅ (Added journal formatter script reference)
+### Task 6.2: Auto-Sync System (2-3 Hours)
+- [ ] Implement automatic sync timer (every 2-3 hours)
+- [ ] Create sync mechanism to update current day's file
+- [ ] Add incremental data updates to existing daily file
+- [ ] Handle file locking and concurrent access issues
+- [ ] Add manual sync button for immediate updates
+- [ ] Create sync status indicators and notifications
 
-**Completed Time:** 4 hours ✅
+**New Requirements:**
+- **Sync Frequency:** Every 2-3 hours (configurable)
+- **Incremental Updates:** Only add new/changed data
+- **Sync Status:** Visual indicators for last sync time
+- **Manual Override:** Button to force immediate sync
 
-### Task 6.3: Export UI & Controls ✅ **COMPLETED**
-- [x] Create "Create Journal" button
-- [x] Add export progress indicators
-- [x] Implement export settings/preferences
-- [x] Add export history tracking
-- [x] Create export preview functionality
+**Files to Create:**
+- `scripts/auto-sync.js`
+- `scripts/sync-scheduler.js`
 
-**Files Modified:**
-- `index.html` ✅ (Added export history button to header)
-- `scripts/file-export.js` ✅ (Enhanced with export history viewer and management)
-- `styles/components.css` ✅ (Added comprehensive export history modal styling)
+**Files to Modify:**
+- `scripts/storage.js` (Add sync tracking)
+- `styles/components.css` (Sync status indicators)
+- `index.html` (Manual sync button)
 
-**Completed Time:** 3 hours ✅
+**Estimated Time:** 5 hours
+
+### Task 6.3: Daily Carryforward Logic
+- [ ] Implement smart carryforward for next day's file
+- [ ] Copy only incomplete todos to new day's file
+- [ ] Reset daily checklist items (unchecked state)
+- [ ] Exclude completed meetings from carryforward
+- [ ] Add project status continuation
+- [ ] Handle weekend/holiday skipping (optional)
+
+**New Requirements:**
+- **Selective Carryforward:** Only incomplete/relevant items
+- **Reset Logic:** Daily checklist starts fresh each day
+- **Status Tracking:** Maintain project roadmap position
+- **Clean Separation:** Completed items stay in previous day's file
+
+**Files to Create/Modify:**
+- `scripts/daily-carryforward.js`
+- `scripts/daily-file-manager.js`
+- `scripts/daily-reset.js` (Enhance existing)
+
+**Estimated Time:** 4 hours
+
+### Task 6.4: File Content Structure & Formatting
+- [ ] Create standardized daily file template
+- [ ] Add structured sections for each component
+- [ ] Implement AI-friendly formatting
+- [ ] Add timestamps and metadata
+- [ ] Create file header with project info
+- [ ] Add file footer with completion summary
+
+**Required File Structure:**
+```
+Date: 2025-09-02
+Project: [Project Name] | Status: [X% Complete] | Days Remaining: [N]
+
+=== ROADMAP STATUS ===
+Start Date: [Date] | End Date: [Date] | Current Position: [X%]
+Milestones: [Upcoming/Completed milestones]
+
+=== DAILY CHECKLIST ===
+[ ] Item 1
+[x] Item 2 (Completed at XX:XX)
+[ ] Item 3
+
+=== TODAY - TODOs ===
+[ ] Validate RTE control
+[x] Ensure figma for speech to text control (Completed)
+[Carried from previous day] [ ] Previous incomplete task
+
+=== MEETINGS ===
+3:00 PM - Flutter Support
+Meeting notes: [Notes content]
+Status: [Completed/Scheduled]
+
+=== SYNC INFO ===
+Last Updated: [Timestamp]
+Next Sync: [Timestamp]
+Total Syncs Today: [N]
+```
+
+**Files to Create/Modify:**
+- `scripts/file-formatter.js` (New - specific for daily files)
+- `scripts/daily-file-manager.js`
+
+**Estimated Time:** 3 hours
+
+### Task 6.5: Folder Management & Settings 🚧 **NEW REQUIREMENT**
+- [ ] Create folder selection UI for daily files
+- [ ] Add folder path configuration and validation
+- [ ] Implement folder permission handling
+- [ ] Add folder access testing functionality
+- [ ] Create folder structure preview
+- [ ] Add backup location settings (optional)
+
+**New Features:**
+- **Folder Picker:** Native File System Access API folder selection
+- **Path Validation:** Ensure write permissions and accessibility
+- **Settings Storage:** Remember user's preferred folder location
+- **Folder Health Check:** Periodic validation of folder access
+
+**Files to Create/Modify:**
+- `scripts/folder-manager.js` (New)
+- `scripts/settings.js` (Add folder settings)
+- `index.html` (Folder selection UI)
+- `styles/components.css` (Folder selection styling)
+
+**Estimated Time:** 4 hours
 
 ---
 
@@ -545,21 +635,33 @@ Building a local web application for tracking daily work with visual roadmap, ch
 
 ## 📈 **Summary & Timeline**
 
-### **Total Estimated Time:** 102 hours (approximately 13 working days)
+### **Updated Total Estimated Time:** 124 hours (approximately 16 working days)
 
-### **Priority Order:**
+### **Priority Order (UPDATED):**
 1. **High Priority**: Phases 1-3 (Foundation, Roadmap, Checklist) - 25 hours
-2. **Medium Priority**: Phases 4-6 (Todos, Meetings, Export) - 30 hours  
-3. **Low Priority**: Phases 7-9 (Polish, Testing, Documentation) - 47 hours
+2. **Critical Priority**: Phase 6 (Daily File System & Auto-Sync) - 22 hours ⚡ **NEW**
+3. **Medium Priority**: Phases 4-5 (Todos, Meetings) - 23 hours  
+4. **Low Priority**: Phases 7-9 (Polish, Testing, Documentation) - 47 hours
+5. **Bug Fixes**: Phase 10 (Enhancements) - 7 hours
 
 ### **Minimum Viable Product (MVP):**
-Complete Phases 1-6 for a fully functional application (55 hours)
+Complete Phases 1-6 for a fully functional application with daily file sync (70 hours)
 
-### **Development Approach:**
+### **Development Approach (UPDATED):**
 - Work on tasks sequentially within each phase
+- **Priority Focus**: Complete Phase 6 (Daily File System) immediately after Phase 3
 - Test each component thoroughly before moving to next task
+- **File System Testing**: Extensive testing of File System Access API and folder permissions
 - Regular commits after completing each task
 - Focus on Chrome/Edge compatibility throughout development
+- **Daily File Testing**: Test file creation, sync, and carryforward logic thoroughly
+
+### **Key New Features Added:**
+✅ **Daily File Creation**: One text file per day in user-specified folder  
+✅ **Auto-Sync System**: Updates file every 2-3 hours automatically  
+✅ **Smart Carryforward**: Only incomplete items move to next day  
+✅ **Structured Format**: AI-friendly file format with clear sections  
+✅ **Folder Management**: User controls where daily files are saved  
 
 ---
 

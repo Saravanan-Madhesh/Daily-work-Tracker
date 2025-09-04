@@ -52,7 +52,7 @@ class FileExportManager {
      */
     async loadExportSettings() {
         try {
-            const settings = await storageManager.getData('exportSettings');
+            const settings = await StorageManager.getData('exportSettings');
             this.exportSettings = settings || {
                 defaultFormat: 'txt',
                 includeSections: {
@@ -557,8 +557,8 @@ class FileExportManager {
      */
     async collectRoadmapData(dateRange) {
         try {
-            const projectData = await storageManager.getData('projectSettings');
-            const milestones = await storageManager.getData('milestones') || [];
+            const projectData = await StorageManager.get('project_config');
+            const milestones = await StorageManager.getAllFromStore('milestones') || [];
             
             return {
                 project: projectData || {},
@@ -573,61 +573,70 @@ class FileExportManager {
     }
 
     /**
-     * Collect checklist data
+     * Collect checklist data in simplified format for journal formatter
      */
     async collectChecklistData(dateRange) {
         try {
-            const checklistHistory = await storageManager.getData('checklistHistory') || {};
-            const checklistTemplates = await storageManager.getData('checklistTemplates') || [];
+            // Get current checklist items
+            const allChecklistItems = await StorageManager.getAllFromStore('checklistItems') || [];
+            const today = new Date().toISOString().split('T')[0];
             
-            const filteredHistory = {};
-            Object.entries(checklistHistory).forEach(([date, data]) => {
-                if (this.isDateInRange(new Date(date), dateRange)) {
-                    filteredHistory[date] = data;
-                }
-            });
+            // Filter for today's items (non-templates)
+            const todaysItems = allChecklistItems.filter(item => 
+                !item.isTemplate && 
+                item.date === today
+            );
 
             return {
-                history: filteredHistory,
-                templates: checklistTemplates
+                items: todaysItems
             };
         } catch (error) {
             console.error('Error collecting checklist data:', error);
-            return { error: 'Failed to collect checklist data' };
+            return { items: [] };
         }
     }
 
     /**
-     * Collect todos data
+     * Collect todos data for journal formatter
      */
     async collectTodosData(dateRange) {
         try {
-            const todos = await storageManager.getData('todos') || [];
+            const allTodos = await StorageManager.getAllFromStore('todos') || [];
             
-            return todos.filter(todo => {
-                const todoDate = new Date(todo.createdAt);
-                return this.isDateInRange(todoDate, dateRange);
+            // Filter for current day or date range
+            return allTodos.filter(todo => {
+                if (todo.createdAt) {
+                    const todoDate = new Date(todo.createdAt);
+                    return this.isDateInRange(todoDate, dateRange);
+                } else if (todo.date) {
+                    const todoDate = new Date(todo.date);
+                    return this.isDateInRange(todoDate, dateRange);
+                }
+                return false;
             });
         } catch (error) {
             console.error('Error collecting todos data:', error);
-            return { error: 'Failed to collect todos data' };
+            return [];
         }
     }
 
     /**
-     * Collect meetings data
+     * Collect meetings data for journal formatter
      */
     async collectMeetingsData(dateRange) {
         try {
-            const meetings = await storageManager.getData('meetings') || [];
+            const allMeetings = await StorageManager.getAllFromStore('meetings') || [];
             
-            return meetings.filter(meeting => {
-                const meetingDate = new Date(meeting.date);
-                return this.isDateInRange(meetingDate, dateRange);
+            return allMeetings.filter(meeting => {
+                if (meeting.date) {
+                    const meetingDate = new Date(meeting.date);
+                    return this.isDateInRange(meetingDate, dateRange);
+                }
+                return false;
             });
         } catch (error) {
             console.error('Error collecting meetings data:', error);
-            return { error: 'Failed to collect meetings data' };
+            return [];
         }
     }
 
@@ -646,17 +655,17 @@ class FileExportManager {
 
             // Collect basic statistics
             if (this.exportSettings.includeSections.checklist) {
-                const checklistHistory = await storageManager.getData('checklistHistory') || {};
-                stats.checklist = this.calculateChecklistStats(checklistHistory, dateRange);
+                const allChecklistItems = await StorageManager.getAllFromStore('checklistItems') || [];
+                stats.checklist = this.calculateChecklistStats(allChecklistItems, dateRange);
             }
 
             if (this.exportSettings.includeSections.todos) {
-                const todos = await storageManager.getData('todos') || [];
+                const todos = await StorageManager.getAllFromStore('todos') || [];
                 stats.todos = this.calculateTodoStats(todos, dateRange);
             }
 
             if (this.exportSettings.includeSections.meetings) {
-                const meetings = await storageManager.getData('meetings') || [];
+                const meetings = await StorageManager.getAllFromStore('meetings') || [];
                 stats.meetings = this.calculateMeetingStats(meetings, dateRange);
             }
 
@@ -677,30 +686,24 @@ class FileExportManager {
     /**
      * Calculate checklist statistics
      */
-    calculateChecklistStats(checklistHistory, dateRange) {
+    calculateChecklistStats(checklistItems, dateRange) {
         const stats = {
-            totalDays: 0,
-            completedDays: 0,
             totalItems: 0,
             completedItems: 0,
             averageCompletion: 0
         };
 
-        Object.entries(checklistHistory).forEach(([date, data]) => {
-            if (this.isDateInRange(new Date(date), dateRange)) {
-                stats.totalDays++;
-                const completed = data.items.filter(item => item.completed).length;
-                const total = data.items.length;
-                
-                stats.totalItems += total;
-                stats.completedItems += completed;
-                
-                if (completed === total && total > 0) {
-                    stats.completedDays++;
-                }
+        // Filter checklist items for date range and count completions
+        const filteredItems = checklistItems.filter(item => {
+            if (item.date) {
+                const itemDate = new Date(item.date);
+                return this.isDateInRange(itemDate, dateRange);
             }
+            return false;
         });
 
+        stats.totalItems = filteredItems.length;
+        stats.completedItems = filteredItems.filter(item => item.completed).length;
         stats.averageCompletion = stats.totalItems > 0 ? 
             Math.round((stats.completedItems / stats.totalItems) * 100) : 0;
 
@@ -880,7 +883,7 @@ class FileExportManager {
             this.updateProgress(progressFill, progressText, 100, 'Export complete!');
 
             // Save export settings
-            await storageManager.saveData('exportSettings', this.exportSettings);
+            await StorageManager.set('exportSettings', this.exportSettings);
 
             // Track export history
             await this.trackExportHistory(filename, data);
@@ -906,74 +909,23 @@ class FileExportManager {
     }
 
     /**
-     * Format data for specific export format using advanced journal formatter
+     * Format data for export using simplified journal formatter
      */
     async formatDataForExport(data, format) {
         try {
-            // Use the advanced journal formatter if available
-            if (window.journalFormatter) {
-                const templateType = this.getTemplateForFormat(format);
-                const formatterOptions = {
-                    template: templateType,
-                    format: this.mapFormatToJournalFormat(format),
-                    dateFormat: this.exportSettings.dateFormat || 'long',
-                    timezone: this.exportSettings.timezone,
-                    includeInsights: true,
-                    customOptions: {
-                        detailLevel: this.exportSettings.detailLevel || 'standard',
-                        includeSummary: true,
-                        includeAnalytics: this.exportSettings.includeSections?.statistics
-                    }
-                };
-
-                const result = await window.journalFormatter.formatJournal(data, formatterOptions);
+            // Use simplified journal formatter for text format
+            if (format === 'txt' && window.journalFormatter) {
+                const result = await window.journalFormatter.formatJournal(data);
                 return result.content;
             }
             
-            // Fallback to basic formatting
+            // Use basic formatting for other formats
             return this.basicFormatDataForExport(data, format);
             
         } catch (error) {
-            console.error('Advanced formatting failed, using fallback:', error);
+            console.error('Formatting failed, using fallback:', error);
             return this.basicFormatDataForExport(data, format);
         }
-    }
-
-    /**
-     * Get appropriate template based on user selection or auto-selection
-     */
-    getTemplateForFormat(format) {
-        // Use user selection if not auto
-        if (this.exportSettings.journalTemplate && this.exportSettings.journalTemplate !== 'auto') {
-            return this.exportSettings.journalTemplate;
-        }
-        
-        // Auto-select based on date range and context
-        const dateRange = this.getDateRange();
-        const days = Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24));
-        
-        // Determine template based on date range and content
-        if (days === 1) return 'daily';
-        if (days <= 7) return 'weekly';
-        if (this.exportSettings.includeSections?.roadmap && days > 7) return 'project';
-        if (format === 'html' && days > 30) return 'executive';
-        
-        return 'detailed';
-    }
-
-    /**
-     * Map export format to journal formatter format
-     */
-    mapFormatToJournalFormat(format) {
-        const formatMap = {
-            'txt': 'text',
-            'json': 'json',
-            'csv': 'csv',
-            'html': 'html',
-            'md': 'markdown'
-        };
-        
-        return formatMap[format] || 'text';
     }
 
     /**
@@ -1410,7 +1362,7 @@ class FileExportManager {
      */
     async trackExportHistory(filename, data) {
         try {
-            const history = await storageManager.getData('exportHistory') || [];
+            const history = await StorageManager.get('exportHistory') || [];
             const exportRecord = {
                 id: Date.now().toString(),
                 filename: filename,
@@ -1428,7 +1380,7 @@ class FileExportManager {
                 history.splice(50);
             }
 
-            await storageManager.saveData('exportHistory', history);
+            await StorageManager.set('exportHistory', history);
         } catch (error) {
             console.error('Failed to track export history:', error);
         }
@@ -1487,7 +1439,7 @@ class FileExportManager {
      */
     async showExportHistoryModal() {
         try {
-            const history = await storageManager.getData('exportHistory') || [];
+            const history = await StorageManager.get('exportHistory') || [];
             const modal = this.createExportHistoryModal(history);
             document.body.appendChild(modal);
             
@@ -1691,7 +1643,7 @@ class FileExportManager {
      */
     async repeatExport(recordId) {
         try {
-            const history = await storageManager.getData('exportHistory') || [];
+            const history = await StorageManager.get('exportHistory') || [];
             const record = history.find(r => r.id === recordId);
             
             if (!record) {
@@ -1726,10 +1678,10 @@ class FileExportManager {
      */
     async deleteHistoryItem(recordId) {
         try {
-            const history = await storageManager.getData('exportHistory') || [];
+            const history = await StorageManager.get('exportHistory') || [];
             const filteredHistory = history.filter(r => r.id !== recordId);
             
-            await storageManager.saveData('exportHistory', filteredHistory);
+            await StorageManager.set('exportHistory', filteredHistory);
             
             // Refresh the modal
             const modal = document.getElementById('exportHistoryModal');
@@ -1754,7 +1706,7 @@ class FileExportManager {
         
         if (confirmed) {
             try {
-                await storageManager.saveData('exportHistory', []);
+                await StorageManager.set('exportHistory', []);
                 modal.remove();
                 this.showToast('Export history cleared', 'success');
             } catch (error) {
