@@ -53,22 +53,7 @@ class FileExportManager {
     async loadExportSettings() {
         try {
             const settings = await StorageManager.getData('exportSettings');
-            this.exportSettings = settings || {
-                defaultFormat: 'txt',
-                includeSections: {
-                    roadmap: true,
-                    checklist: true,
-                    todos: true,
-                    meetings: true,
-                    statistics: true
-                },
-                dateRange: 'last7days',
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                customDateRange: {
-                    start: null,
-                    end: null
-                }
-            };
+            this.exportSettings = settings || this.getDefaultExportSettings();
         } catch (error) {
             console.error('Failed to load export settings:', error);
             this.exportSettings = this.getDefaultExportSettings();
@@ -81,32 +66,12 @@ class FileExportManager {
     getDefaultExportSettings() {
         return {
             defaultFormat: 'txt',
-            journalTemplate: 'auto',
-            dateFormat: 'long',
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            exportOptions: {
-                includeInsights: true,
-                includeSummary: true,
-                includeMetadata: true,
-                detailedFormatting: false
-            },
-            includeSections: {
-                roadmap: true,
-                checklist: true,
-                todos: true,
-                meetings: true,
-                statistics: true
-            },
-            dateRange: 'last7days',
-            customDateRange: {
-                start: null,
-                end: null
-            }
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
         };
     }
 
     /**
-     * Show the export configuration modal
+     * Show the simplified journal export modal for today only
      */
     showExportModal() {
         const modal = this.createExportModal();
@@ -120,7 +85,7 @@ class FileExportManager {
     }
 
     /**
-     * Create the export configuration modal
+     * Create the simplified export modal for today's journal only
      */
     createExportModal() {
         const modalOverlay = document.createElement('div');
@@ -130,175 +95,53 @@ class FileExportManager {
         modalOverlay.innerHTML = `
             <div class="modal export-modal">
                 <div class="modal-header">
-                    <h2>📊 Create Journal Export</h2>
+                    <h2>📊 Create Today's Journal</h2>
                     <button class="modal-close" aria-label="Close modal">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="export-settings">
+                        <!-- Today's Journal Info -->
+                        <div class="setting-group">
+                            <div class="journal-info">
+                                <div class="info-card">
+                                    <h3>📅 Today's Journal Export</h3>
+                                    <p>Creating journal for: <strong>${new Date().toDateString()}</strong></p>
+                                    <div class="journal-contents">
+                                        <div class="content-item">
+                                            <span class="content-icon">✅</span>
+                                            <span>Today's Checklist Status</span>
+                                        </div>
+                                        <div class="content-item">
+                                            <span class="content-icon">📝</span>
+                                            <span>Completed Todos</span>
+                                        </div>
+                                        <div class="content-item">
+                                            <span class="content-icon">🤝</span>
+                                            <span>Completed Meetings with Notes</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Export Format Selection -->
                         <div class="setting-group">
                             <label for="exportFormat">Export Format:</label>
                             <select id="exportFormat" class="form-control">
-                                ${Object.entries(this.exportFormats).map(([key, format]) => 
-                                    `<option value="${key}" ${this.exportSettings.defaultFormat === key ? 'selected' : ''}>
-                                        ${format.name} (${format.extension})
-                                    </option>`
-                                ).join('')}
+                                <option value="txt" selected>📄 Plain Text (.txt)</option>
+                                <option value="html">🌐 HTML Report (.html)</option>
                             </select>
                             <small class="help-text">
                                 ${this.supportsFSA ? 'File System Access API supported' : 'Using fallback download method'}
                             </small>
                         </div>
 
-                        <!-- Journal Template Selection -->
-                        <div class="setting-group">
-                            <label for="journalTemplate">Journal Template:</label>
-                            <select id="journalTemplate" class="form-control">
-                                <option value="auto">📊 Auto-Select (Recommended)</option>
-                                <option value="daily">📅 Daily Journal</option>
-                                <option value="weekly">📈 Weekly Summary</option>
-                                <option value="project">🛣️ Project-Focused</option>
-                                <option value="executive">💼 Executive Summary</option>
-                                <option value="detailed">📚 Detailed Report</option>
-                            </select>
-                            <small class="help-text">
-                                Template determines the structure and focus of your journal export
-                            </small>
-                        </div>
-
-                        <!-- Date & Time Formatting -->
-                        <div class="setting-group">
-                            <label>Date & Time Formatting:</label>
-                            <div class="formatting-options">
-                                <div class="format-row">
-                                    <label for="dateFormat">Date Format:</label>
-                                    <select id="dateFormat" class="form-control">
-                                        <option value="long">Long Format (Monday, January 1, 2024)</option>
-                                        <option value="short">Short Format (Jan 1, 2024)</option>
-                                        <option value="iso">ISO Format (2024-01-01)</option>
-                                        <option value="relative">Relative Format (Today, Yesterday)</option>
-                                    </select>
-                                </div>
-                                <div class="format-row">
-                                    <label for="timezoneSelect">Timezone:</label>
-                                    <select id="timezoneSelect" class="form-control">
-                                        <option value="auto">Auto-detect (${Intl.DateTimeFormat().resolvedOptions().timeZone})</option>
-                                        <option value="UTC">UTC</option>
-                                        <option value="America/New_York">Eastern Time</option>
-                                        <option value="America/Chicago">Central Time</option>
-                                        <option value="America/Denver">Mountain Time</option>
-                                        <option value="America/Los_Angeles">Pacific Time</option>
-                                        <option value="Europe/London">London</option>
-                                        <option value="Europe/Paris">Paris</option>
-                                        <option value="Asia/Tokyo">Tokyo</option>
-                                        <option value="Asia/Shanghai">Shanghai</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Export Options -->
-                        <div class="setting-group">
-                            <label>Export Options:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="exportOptions" value="includeInsights" checked>
-                                    <span>📊 Include Insights & Analysis</span>
-                                </label>
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="exportOptions" value="includeSummary" checked>
-                                    <span>📋 Include Executive Summary</span>
-                                </label>
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="exportOptions" value="includeMetadata" checked>
-                                    <span>ℹ️ Include Export Metadata</span>
-                                </label>
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="exportOptions" value="detailedFormatting">
-                                    <span>🎨 Enhanced Formatting (HTML/Markdown)</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Date Range Selection -->
-                        <div class="setting-group">
-                            <label>Date Range:</label>
-                            <div class="radio-group">
-                                <label class="radio-option">
-                                    <input type="radio" name="dateRange" value="today" ${this.exportSettings.dateRange === 'today' ? 'checked' : ''}>
-                                    <span>Today Only</span>
-                                </label>
-                                <label class="radio-option">
-                                    <input type="radio" name="dateRange" value="last7days" ${this.exportSettings.dateRange === 'last7days' ? 'checked' : ''}>
-                                    <span>Last 7 Days</span>
-                                </label>
-                                <label class="radio-option">
-                                    <input type="radio" name="dateRange" value="last30days" ${this.exportSettings.dateRange === 'last30days' ? 'checked' : ''}>
-                                    <span>Last 30 Days</span>
-                                </label>
-                                <label class="radio-option">
-                                    <input type="radio" name="dateRange" value="all" ${this.exportSettings.dateRange === 'all' ? 'checked' : ''}>
-                                    <span>All Data</span>
-                                </label>
-                                <label class="radio-option">
-                                    <input type="radio" name="dateRange" value="custom" ${this.exportSettings.dateRange === 'custom' ? 'checked' : ''}>
-                                    <span>Custom Range</span>
-                                </label>
-                            </div>
-                            <div class="custom-date-range" style="display: ${this.exportSettings.dateRange === 'custom' ? 'block' : 'none'}">
-                                <div class="date-inputs">
-                                    <div class="date-input-group">
-                                        <label for="customStartDate">From:</label>
-                                        <input type="date" id="customStartDate" class="form-control" 
-                                               value="${this.exportSettings.customDateRange.start || ''}">
-                                    </div>
-                                    <div class="date-input-group">
-                                        <label for="customEndDate">To:</label>
-                                        <input type="date" id="customEndDate" class="form-control" 
-                                               value="${this.exportSettings.customDateRange.end || ''}">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sections to Include -->
-                        <div class="setting-group">
-                            <label>Sections to Include:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="includeSections" value="roadmap" 
-                                           ${this.exportSettings.includeSections.roadmap ? 'checked' : ''}>
-                                    <span>🛣️ Project Roadmap & Milestones</span>
-                                </label>
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="includeSections" value="checklist" 
-                                           ${this.exportSettings.includeSections.checklist ? 'checked' : ''}>
-                                    <span>✅ Daily Checklist</span>
-                                </label>
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="includeSections" value="todos" 
-                                           ${this.exportSettings.includeSections.todos ? 'checked' : ''}>
-                                    <span>📝 ToDos</span>
-                                </label>
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="includeSections" value="meetings" 
-                                           ${this.exportSettings.includeSections.meetings ? 'checked' : ''}>
-                                    <span>🤝 Meetings</span>
-                                </label>
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="includeSections" value="statistics" 
-                                           ${this.exportSettings.includeSections.statistics ? 'checked' : ''}>
-                                    <span>📊 Statistics & Analytics</span>
-                                </label>
-                            </div>
-                        </div>
-
                         <!-- Export Preview -->
                         <div class="setting-group">
                             <div class="export-preview">
                                 <div class="preview-header">
-                                    <strong>Export Preview:</strong>
-                                    <span id="previewInfo" class="preview-info">Calculating...</span>
+                                    <strong>Today's Journal Preview:</strong>
+                                    <span id="previewInfo" class="preview-info">Loading...</span>
                                 </div>
                                 <div id="previewContent" class="preview-content">
                                     Loading preview...
@@ -317,7 +160,7 @@ class FileExportManager {
                     <div class="modal-actions">
                         <button class="btn btn-secondary" id="cancelExport">Cancel</button>
                         <button class="btn btn-primary" id="startExport">
-                            💾 Export Journal
+                            💾 Create Journal
                         </button>
                     </div>
                 </div>
@@ -348,111 +191,55 @@ class FileExportManager {
             if (e.target === modal) closeModal();
         });
 
-        // Settings change events
-        const inputs = modal.querySelectorAll('input, select');
-        inputs.forEach(input => {
-            input.addEventListener('change', () => {
-                this.updateSettingsFromModal(modal);
+        // Format change events
+        const formatSelect = modal.querySelector('#exportFormat');
+        if (formatSelect) {
+            formatSelect.addEventListener('change', () => {
                 this.updatePreview(modal);
             });
-        });
-
-        // Custom date range visibility
-        const dateRangeRadios = modal.querySelectorAll('input[name="dateRange"]');
-        dateRangeRadios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                const customDateRange = modal.querySelector('.custom-date-range');
-                customDateRange.style.display = radio.value === 'custom' ? 'block' : 'none';
-            });
-        });
+        }
 
         // Export button
         const exportBtn = modal.querySelector('#startExport');
         exportBtn.addEventListener('click', () => {
-            this.startExport(modal);
+            this.startTodayExport(modal);
         });
     }
 
     /**
-     * Update settings from modal form
+     * Get the selected export format from modal
      */
-    updateSettingsFromModal(modal) {
-        const formData = new FormData(modal.querySelector('.export-settings'));
-        
-        this.exportSettings.defaultFormat = modal.querySelector('#exportFormat').value;
-        this.exportSettings.dateRange = formData.get('dateRange') || 'last7days';
-        
-        // Update template selection
-        const templateSelect = modal.querySelector('#journalTemplate');
-        if (templateSelect) {
-            this.exportSettings.journalTemplate = templateSelect.value;
-        }
-        
-        // Update date/time formatting
-        const dateFormatSelect = modal.querySelector('#dateFormat');
-        if (dateFormatSelect) {
-            this.exportSettings.dateFormat = dateFormatSelect.value;
-        }
-        
-        const timezoneSelect = modal.querySelector('#timezoneSelect');
-        if (timezoneSelect) {
-            this.exportSettings.timezone = timezoneSelect.value === 'auto' ? 
-                Intl.DateTimeFormat().resolvedOptions().timeZone : 
-                timezoneSelect.value;
-        }
-        
-        // Update export options
-        const exportOptions = formData.getAll('exportOptions');
-        this.exportSettings.exportOptions = {
-            includeInsights: exportOptions.includes('includeInsights'),
-            includeSummary: exportOptions.includes('includeSummary'),
-            includeMetadata: exportOptions.includes('includeMetadata'),
-            detailedFormatting: exportOptions.includes('detailedFormatting')
-        };
-        
-        // Update custom date range
-        if (this.exportSettings.dateRange === 'custom') {
-            this.exportSettings.customDateRange.start = modal.querySelector('#customStartDate').value;
-            this.exportSettings.customDateRange.end = modal.querySelector('#customEndDate').value;
-        }
-
-        // Update included sections
-        const includeSections = formData.getAll('includeSections');
-        this.exportSettings.includeSections = {
-            roadmap: includeSections.includes('roadmap'),
-            checklist: includeSections.includes('checklist'),
-            todos: includeSections.includes('todos'),
-            meetings: includeSections.includes('meetings'),
-            statistics: includeSections.includes('statistics')
-        };
+    getSelectedFormat(modal) {
+        const formatSelect = modal.querySelector('#exportFormat');
+        return formatSelect ? formatSelect.value : 'txt';
     }
 
     /**
-     * Update export preview
+     * Update export preview for today's journal only
      */
     async updatePreview(modal) {
         try {
             const previewInfo = modal.querySelector('#previewInfo');
             const previewContent = modal.querySelector('#previewContent');
             
-            previewInfo.textContent = 'Calculating...';
+            previewInfo.textContent = 'Loading...';
             previewContent.textContent = 'Loading preview...';
 
-            const dateRange = this.getDateRange();
-            const data = await this.collectExportData(dateRange);
+            const data = await this.collectTodayData();
             
-            // Calculate export info
-            const totalItems = this.countDataItems(data);
-            const estimatedSize = this.estimateExportSize(data, this.exportSettings.defaultFormat);
+            // Calculate today's export info
+            const totalItems = this.countTodayItems(data);
+            const estimatedSize = this.estimateExportSize(data, this.getSelectedFormat(modal));
             
             previewInfo.innerHTML = `
-                <span class="preview-stat">📊 ${totalItems} total items</span>
+                <span class="preview-stat">✅ ${data.checklist ? data.checklist.length : 0} checklist items</span>
+                <span class="preview-stat">📝 ${data.todos ? data.todos.length : 0} completed todos</span>
+                <span class="preview-stat">🤝 ${data.meetings ? data.meetings.length : 0} completed meetings</span>
                 <span class="preview-stat">📦 ~${estimatedSize}</span>
-                <span class="preview-stat">📅 ${this.formatDateRange(dateRange)}</span>
             `;
 
             // Show preview content
-            const previewText = this.generatePreviewText(data);
+            const previewText = this.generateTodayPreviewText(data);
             previewContent.textContent = previewText;
 
         } catch (error) {
@@ -465,44 +252,164 @@ class FileExportManager {
     }
 
     /**
-     * Get date range based on settings
+     * Collect today's data only (checklist status, completed todos, completed meetings with notes)
      */
-    getDateRange() {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
-        switch (this.exportSettings.dateRange) {
-            case 'today':
-                return {
-                    start: today,
-                    end: new Date(today.getTime() + 24 * 60 * 60 * 1000)
-                };
-            case 'last7days':
-                return {
-                    start: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
-                    end: new Date(today.getTime() + 24 * 60 * 60 * 1000)
-                };
-            case 'last30days':
-                return {
-                    start: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000),
-                    end: new Date(today.getTime() + 24 * 60 * 60 * 1000)
-                };
-            case 'custom':
-                return {
-                    start: this.exportSettings.customDateRange.start ? 
-                           new Date(this.exportSettings.customDateRange.start) : 
-                           new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
-                    end: this.exportSettings.customDateRange.end ? 
-                         new Date(this.exportSettings.customDateRange.end) : 
-                         new Date(today.getTime() + 24 * 60 * 60 * 1000)
-                };
-            case 'all':
-            default:
-                return {
-                    start: new Date('2020-01-01'),
-                    end: new Date(today.getTime() + 24 * 60 * 60 * 1000)
-                };
+    async collectTodayData() {
+        const today = new Date().toISOString().split('T')[0];
+        const data = {
+            exportInfo: {
+                generatedAt: new Date().toISOString(),
+                exportDate: today,
+                exportType: 'daily_journal'
+            },
+            checklist: [],
+            todos: [],
+            meetings: []
+        };
+
+        try {
+            // Get today's checklist items with safety checks
+            try {
+                const allChecklistItems = await StorageManager.getAllFromStore('checklistItems') || [];
+                data.checklist = allChecklistItems.filter(item => {
+                    try {
+                        return item && !item.isTemplate && item.date === today;
+                    } catch (e) {
+                        console.warn('Skipping invalid checklist item:', item, e);
+                        return false;
+                    }
+                });
+            } catch (error) {
+                console.error('Error collecting checklist items:', error);
+                data.checklist = [];
+            }
+
+            // Get completed todos from today with safety checks
+            try {
+                const allTodos = await StorageManager.getAllFromStore('todos') || [];
+                data.todos = allTodos.filter(todo => {
+                    try {
+                        if (!todo || !todo.completed) return false;
+                        
+                        if (todo.completedAt) {
+                            const completedDate = new Date(todo.completedAt).toISOString().split('T')[0];
+                            return completedDate === today;
+                        } else if (todo.createdAt) {
+                            const createdDate = new Date(todo.createdAt).toISOString().split('T')[0];
+                            return createdDate === today && todo.completed;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.warn('Skipping invalid todo item:', todo, e);
+                        return false;
+                    }
+                });
+            } catch (error) {
+                console.error('Error collecting todos:', error);
+                data.todos = [];
+            }
+
+            // Get completed meetings from today with notes with safety checks
+            try {
+                const allMeetings = await StorageManager.getAllFromStore('meetings') || [];
+                data.meetings = allMeetings.filter(meeting => {
+                    try {
+                        if (!meeting || !meeting.completed) return false;
+                        if (!meeting.date) return false;
+                        
+                        const meetingDate = new Date(meeting.date).toISOString().split('T')[0];
+                        return meetingDate === today && meeting.notes && meeting.notes.trim();
+                    } catch (e) {
+                        console.warn('Skipping invalid meeting item:', meeting, e);
+                        return false;
+                    }
+                });
+            } catch (error) {
+                console.error('Error collecting meetings:', error);
+                data.meetings = [];
+            }
+
+        } catch (error) {
+            console.error('Error collecting today\'s data:', error);
         }
+
+        return data;
+    }
+
+    /**
+     * Count items in today's data
+     */
+    countTodayItems(data) {
+        let count = 0;
+        if (data.checklist) count += data.checklist.length;
+        if (data.todos) count += data.todos.length;
+        if (data.meetings) count += data.meetings.length;
+        return count;
+    }
+
+    /**
+     * Generate preview text for today's journal
+     */
+    generateTodayPreviewText(data) {
+        let preview = '📊 TODAY\'S JOURNAL\n';
+        preview += '═'.repeat(40) + '\n\n';
+        preview += `📅 ${new Date().toDateString()}\n\n`;
+
+        if (data.checklist && data.checklist.length > 0) {
+            preview += '✅ TODAY\'S CHECKLIST STATUS\n';
+            preview += '─'.repeat(25) + '\n';
+            const completed = data.checklist.filter(item => item.completed).length;
+            const total = data.checklist.length;
+            const percentage = Math.round((completed / total) * 100);
+            preview += `Progress: ${completed}/${total} (${percentage}%)\n`;
+            
+            data.checklist.slice(0, 3).forEach(item => {
+                const status = item.completed ? '✅' : '☐';
+                preview += `${status} ${item.text || 'Untitled item'}\n`;
+            });
+            if (data.checklist.length > 3) {
+                preview += `... and ${data.checklist.length - 3} more items\n`;
+            }
+            preview += '\n';
+        }
+
+        if (data.todos && data.todos.length > 0) {
+            preview += '📝 COMPLETED TODOS\n';
+            preview += '─'.repeat(20) + '\n';
+            data.todos.slice(0, 3).forEach(todo => {
+                preview += `✅ ${todo.text || 'Untitled Todo'}\n`;
+            });
+            if (data.todos.length > 3) {
+                preview += `... and ${data.todos.length - 3} more todos\n`;
+            }
+            preview += '\n';
+        }
+
+        if (data.meetings && data.meetings.length > 0) {
+            preview += '🤝 COMPLETED MEETINGS WITH NOTES\n';
+            preview += '─'.repeat(35) + '\n';
+            data.meetings.slice(0, 2).forEach(meeting => {
+                const meetingTitle = meeting.title || 'Untitled Meeting';
+                const meetingTime = meeting.time || 'No time';
+                preview += `✅ ${meetingTitle} at ${meetingTime}\n`;
+                if (meeting.notes && meeting.notes.trim()) {
+                    const notes = meeting.notes.substring(0, 50);
+                    preview += `   Notes: ${notes}${meeting.notes.length > 50 ? '...' : ''}\n`;
+                }
+            });
+            if (data.meetings.length > 2) {
+                preview += `... and ${data.meetings.length - 2} more meetings\n`;
+            }
+            preview += '\n';
+        }
+
+        if (data.checklist.length === 0 && data.todos.length === 0 && data.meetings.length === 0) {
+            preview += 'No activities completed today yet.\n\n';
+        }
+
+        preview += '...[Full journal will be generated]';
+        
+        return preview;
     }
 
     /**
@@ -847,9 +754,9 @@ class FileExportManager {
     }
 
     /**
-     * Start the export process
+     * Start today's journal export
      */
-    async startExport(modal) {
+    async startTodayExport(modal) {
         try {
             const exportBtn = modal.querySelector('#startExport');
             const cancelBtn = modal.querySelector('#cancelExport');
@@ -862,28 +769,25 @@ class FileExportManager {
             cancelBtn.disabled = true;
             progressContainer.style.display = 'block';
 
-            // Update progress: Collecting data
-            this.updateProgress(progressFill, progressText, 10, 'Collecting data...');
+            // Update progress: Collecting today's data
+            this.updateProgress(progressFill, progressText, 10, 'Collecting today\'s data...');
             
-            const dateRange = this.getDateRange();
-            const data = await this.collectExportData(dateRange);
+            const data = await this.collectTodayData();
 
-            // Update progress: Formatting data
-            this.updateProgress(progressFill, progressText, 50, 'Formatting export...');
+            // Update progress: Formatting journal
+            this.updateProgress(progressFill, progressText, 50, 'Formatting journal...');
             
-            const formattedContent = await this.formatDataForExport(data, this.exportSettings.defaultFormat);
-            const filename = this.generateFilename(dateRange, this.exportSettings.defaultFormat);
+            const format = this.getSelectedFormat(modal);
+            const formattedContent = await this.formatTodayJournal(data, format);
+            const filename = this.generateTodayFilename(format);
 
             // Update progress: Saving file
             this.updateProgress(progressFill, progressText, 80, 'Saving file...');
             
-            await this.saveFile(formattedContent, filename, this.exportSettings.defaultFormat);
+            await this.saveFile(formattedContent, filename, format);
 
             // Update progress: Complete
-            this.updateProgress(progressFill, progressText, 100, 'Export complete!');
-
-            // Save export settings
-            await StorageManager.set('exportSettings', this.exportSettings);
+            this.updateProgress(progressFill, progressText, 100, 'Journal created!');
 
             // Track export history
             await this.trackExportHistory(filename, data);
@@ -895,9 +799,361 @@ class FileExportManager {
             }, 1500);
 
         } catch (error) {
-            console.error('Export failed:', error);
+            console.error('Journal export failed:', error);
             this.showExportError(error, modal);
         }
+    }
+
+    /**
+     * Format today's journal data with error handling
+     */
+    async formatTodayJournal(data, format) {
+        try {
+            switch (format) {
+                case 'html':
+                    return this.formatTodayAsHTML(data);
+                case 'txt':
+                default:
+                    return this.formatTodayAsText(data);
+            }
+        } catch (error) {
+            console.error('Error formatting journal:', error);
+            // Return a fallback simple format
+            return `Daily Journal Export - ${new Date().toDateString()}\n\nError occurred while formatting journal. Please try again.\n\nError details: ${error.message}`;
+        }
+    }
+
+    /**
+     * Format today's journal as plain text
+     */
+    formatTodayAsText(data) {
+        let content = '📊 DAILY JOURNAL\n';
+        content += '═'.repeat(50) + '\n\n';
+        content += `📅 Date: ${new Date().toDateString()}\n`;
+        content += `⏰ Generated: ${new Date().toLocaleString()}\n\n`;
+
+        // Checklist section
+        if (data.checklist && data.checklist.length > 0) {
+            content += '✅ TODAY\'S CHECKLIST STATUS\n';
+            content += '─'.repeat(30) + '\n';
+            
+            const completed = data.checklist.filter(item => item.completed).length;
+            const total = data.checklist.length;
+            const percentage = Math.round((completed / total) * 100);
+            
+            content += `Overall Progress: ${completed}/${total} items completed (${percentage}%)\n\n`;
+            
+            const completedItems = data.checklist.filter(item => item.completed);
+            const pendingItems = data.checklist.filter(item => !item.completed);
+            
+            if (completedItems.length > 0) {
+                content += '✅ COMPLETED:\n';
+                completedItems.forEach(item => {
+                    content += `  ✅ ${item.text || 'Untitled item'}\n`;
+                    if (item.completedAt) {
+                        content += `     ⏰ Completed at: ${new Date(item.completedAt).toLocaleTimeString()}\n`;
+                    }
+                });
+                content += '\n';
+            }
+            
+            if (pendingItems.length > 0) {
+                content += '⏳ PENDING:\n';
+                pendingItems.forEach(item => {
+                    content += `  ☐ ${item.text || 'Untitled item'}\n`;
+                });
+                content += '\n';
+            }
+        } else {
+            content += '✅ TODAY\'S CHECKLIST STATUS\n';
+            content += '─'.repeat(30) + '\n';
+            content += 'No checklist items for today.\n\n';
+        }
+
+        // Completed Todos section
+        if (data.todos && data.todos.length > 0) {
+            content += '📝 COMPLETED TODOS\n';
+            content += '─'.repeat(20) + '\n';
+            
+            data.todos.forEach((todo, index) => {
+                content += `${index + 1}. ✅ ${todo.text || 'Untitled Todo'}\n`;
+                if (todo.priority && todo.priority !== 'medium') {
+                    content += `   Priority: ${todo.priority.charAt(0).toUpperCase() + todo.priority.slice(1)}\n`;
+                }
+                if (todo.category && todo.category.trim()) {
+                    content += `   Category: ${todo.category}\n`;
+                }
+                if (todo.completedAt) {
+                    content += `   Completed at: ${new Date(todo.completedAt).toLocaleTimeString()}\n`;
+                }
+                if (todo.description && todo.description.trim()) {
+                    content += `   Description: ${todo.description}\n`;
+                }
+                content += '\n';
+            });
+        } else {
+            content += '📝 COMPLETED TODOS\n';
+            content += '─'.repeat(20) + '\n';
+            content += 'No todos completed today.\n\n';
+        }
+
+        // Completed Meetings section
+        if (data.meetings && data.meetings.length > 0) {
+            content += '🤝 COMPLETED MEETINGS WITH NOTES\n';
+            content += '─'.repeat(35) + '\n';
+            
+            data.meetings.forEach((meeting, index) => {
+                content += `${index + 1}. ✅ ${meeting.title || 'Untitled Meeting'}\n`;
+                content += `   📅 Date: ${meeting.date ? new Date(meeting.date).toDateString() : 'No date'}\n`;
+                content += `   ⏰ Time: ${meeting.time || 'No time specified'}\n`;
+                
+                if (meeting.attendees && Array.isArray(meeting.attendees) && meeting.attendees.length > 0) {
+                    content += `   👥 Attendees: ${meeting.attendees.join(', ')}\n`;
+                }
+                
+                if (meeting.duration) {
+                    content += `   ⏱️ Duration: ${meeting.duration} minutes\n`;
+                }
+                
+                if (meeting.notes && meeting.notes.trim()) {
+                    content += `   📝 Notes:\n`;
+                    content += `   ${meeting.notes.replace(/\n/g, '\n   ')}\n`;
+                }
+                
+                if (meeting.actionItems && Array.isArray(meeting.actionItems) && meeting.actionItems.length > 0) {
+                    content += `   🎯 Action Items:\n`;
+                    meeting.actionItems.forEach(action => {
+                        if (action && action.trim()) {
+                            content += `   • ${action}\n`;
+                        }
+                    });
+                }
+                content += '\n';
+            });
+        } else {
+            content += '🤝 COMPLETED MEETINGS WITH NOTES\n';
+            content += '─'.repeat(35) + '\n';
+            content += 'No meetings with notes completed today.\n\n';
+        }
+
+        // Summary
+        content += '📊 DAILY SUMMARY\n';
+        content += '─'.repeat(20) + '\n';
+        content += `• Checklist items: ${data.checklist ? data.checklist.length : 0}\n`;
+        content += `• Completed todos: ${data.todos ? data.todos.length : 0}\n`;
+        content += `• Meetings with notes: ${data.meetings ? data.meetings.length : 0}\n`;
+        
+        if (data.checklist && data.checklist.length > 0) {
+            const completed = data.checklist.filter(item => item.completed).length;
+            const percentage = Math.round((completed / data.checklist.length) * 100);
+            content += `• Checklist completion: ${percentage}%\n`;
+        }
+        
+        content += '\n';
+        content += '═'.repeat(50) + '\n';
+        content += 'Generated by Daily Work Tracker\n';
+        content += `Export time: ${new Date().toLocaleString()}\n`;
+
+        return content;
+    }
+
+    /**
+     * Format today's journal as HTML
+     */
+    formatTodayAsHTML(data) {
+        const today = new Date().toDateString();
+        const now = new Date().toLocaleString();
+        
+        let html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Journal - ${today}</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333; }
+        .header { text-align: center; border-bottom: 3px solid #007bff; padding-bottom: 20px; margin-bottom: 30px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 20px; border-radius: 10px; }
+        .header h1 { color: #007bff; margin: 0; font-size: 2.5rem; }
+        .header p { color: #6c757d; margin: 5px 0; }
+        .section { margin-bottom: 40px; background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 5px solid #007bff; }
+        .section h2 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 0; }
+        .progress-bar { background: #f0f0f0; border-radius: 10px; padding: 3px; margin: 15px 0; }
+        .progress-fill { background: linear-gradient(90deg, #28a745, #20c997); height: 25px; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; }
+        .item { margin-bottom: 20px; padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; }
+        .item.completed { background-color: #d4edda; border-color: #28a745; }
+        .item.pending { background-color: #fff3cd; border-color: #ffc107; }
+        .item-title { font-weight: bold; color: #495057; margin-bottom: 8px; }
+        .item-meta { font-size: 0.9em; color: #6c757d; margin-bottom: 5px; }
+        .item-notes { background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px; font-style: italic; }
+        .summary { background: linear-gradient(135deg, #e3f2fd, #f0f8ff); border-radius: 10px; padding: 20px; text-align: center; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px; }
+        .summary-item { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .summary-number { font-size: 2rem; font-weight: bold; color: #007bff; }
+        .summary-label { color: #6c757d; font-size: 0.9rem; }
+        .footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; font-size: 0.9rem; }
+        @media print { body { margin: 0; } .section { break-inside: avoid; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Daily Journal</h1>
+        <p><strong>📅 ${today}</strong></p>
+        <p>Generated on ${now}</p>
+    </div>
+        `;
+
+        // Checklist section
+        html += `
+    <div class="section">
+        <h2>✅ Today's Checklist Status</h2>
+        `;
+        
+        if (data.checklist && data.checklist.length > 0) {
+            const completed = data.checklist.filter(item => item.completed).length;
+            const total = data.checklist.length;
+            const percentage = Math.round((completed / total) * 100);
+            
+            html += `
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${percentage}%;">
+                ${completed}/${total} completed (${percentage}%)
+            </div>
+        </div>
+            `;
+            
+            data.checklist.forEach(item => {
+                const itemClass = item.completed ? 'completed' : 'pending';
+                const status = item.completed ? '✅' : '⏳';
+                html += `
+        <div class="item ${itemClass}">
+            <div class="item-title">${status} ${item.text || 'Untitled item'}</div>
+            ${item.completed && item.completedAt ? 
+                `<div class="item-meta">⏰ Completed at: ${new Date(item.completedAt).toLocaleTimeString()}</div>` : 
+                ''}
+        </div>
+                `;
+            });
+        } else {
+            html += '<p>No checklist items for today.</p>';
+        }
+        html += '</div>';
+
+        // Todos section
+        html += `
+    <div class="section">
+        <h2>📝 Completed Todos</h2>
+        `;
+        
+        if (data.todos && data.todos.length > 0) {
+            data.todos.forEach(todo => {
+                html += `
+        <div class="item completed">
+            <div class="item-title">✅ ${todo.text || 'Untitled Todo'}</div>
+            ${todo.priority && todo.priority !== 'medium' ? 
+                `<div class="item-meta">🎯 Priority: ${todo.priority.charAt(0).toUpperCase() + todo.priority.slice(1)}</div>` : 
+                ''}
+            ${todo.category && todo.category.trim() ? 
+                `<div class="item-meta">📁 Category: ${todo.category}</div>` : 
+                ''}
+            ${todo.completedAt ? 
+                `<div class="item-meta">⏰ Completed at: ${new Date(todo.completedAt).toLocaleTimeString()}</div>` : 
+                ''}
+            ${todo.description && todo.description.trim() ? 
+                `<div class="item-notes">📋 ${todo.description}</div>` : 
+                ''}
+        </div>
+                `;
+            });
+        } else {
+            html += '<p>No todos completed today.</p>';
+        }
+        html += '</div>';
+
+        // Meetings section
+        html += `
+    <div class="section">
+        <h2>🤝 Completed Meetings with Notes</h2>
+        `;
+        
+        if (data.meetings && data.meetings.length > 0) {
+            data.meetings.forEach(meeting => {
+                html += `
+        <div class="item completed">
+            <div class="item-title">✅ ${meeting.title || 'Untitled Meeting'}</div>
+            <div class="item-meta">📅 ${meeting.date ? new Date(meeting.date).toDateString() : 'No date'} ⏰ ${meeting.time || 'No time'}</div>
+            ${meeting.attendees && Array.isArray(meeting.attendees) && meeting.attendees.length > 0 ? 
+                `<div class="item-meta">👥 Attendees: ${meeting.attendees.join(', ')}</div>` : 
+                ''}
+            ${meeting.duration ? 
+                `<div class="item-meta">⏱️ Duration: ${meeting.duration} minutes</div>` : 
+                ''}
+            ${meeting.notes && meeting.notes.trim() ? 
+                `<div class="item-notes">📝 ${meeting.notes.replace(/\n/g, '<br>')}</div>` : 
+                ''}
+            ${meeting.actionItems && Array.isArray(meeting.actionItems) && meeting.actionItems.length > 0 ? 
+                `<div class="item-notes">🎯 Action Items:<br>• ${meeting.actionItems.filter(item => item && item.trim()).join('<br>• ')}</div>` : 
+                ''}
+        </div>
+                `;
+            });
+        } else {
+            html += '<p>No meetings with notes completed today.</p>';
+        }
+        html += '</div>';
+
+        // Summary section
+        html += `
+    <div class="summary">
+        <h2>📊 Daily Summary</h2>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-number">${data.checklist ? data.checklist.length : 0}</div>
+                <div class="summary-label">Checklist Items</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-number">${data.todos ? data.todos.length : 0}</div>
+                <div class="summary-label">Completed Todos</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-number">${data.meetings ? data.meetings.length : 0}</div>
+                <div class="summary-label">Meeting Notes</div>
+            </div>
+        `;
+        
+        if (data.checklist && data.checklist.length > 0) {
+            const completed = data.checklist.filter(item => item.completed).length;
+            const percentage = Math.round((completed / data.checklist.length) * 100);
+            html += `
+            <div class="summary-item">
+                <div class="summary-number">${percentage}%</div>
+                <div class="summary-label">Completion Rate</div>
+            </div>
+            `;
+        }
+        
+        html += `
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Generated by Daily Work Tracker</p>
+        <p>Export time: ${now}</p>
+    </div>
+</body>
+</html>
+        `;
+
+        return html;
+    }
+
+    /**
+     * Generate filename for today's journal
+     */
+    generateTodayFilename(format) {
+        const today = new Date().toISOString().split('T')[0];
+        const extension = this.exportFormats[format].extension;
+        return `daily-journal_${today}${extension}`;
     }
 
     /**
