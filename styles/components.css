@@ -3508,7 +3508,6 @@
         grid-template-columns: 1fr;
         gap: 0.5rem;
     }
-}
 
 @media (max-width: 480px) {
     .settings-modal {
