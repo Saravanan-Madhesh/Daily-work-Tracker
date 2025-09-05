@@ -46,7 +46,7 @@ Daily Work Tracker is a **privacy-first**, **offline-capable** productivity appl
 ### Getting Started
 
 1. **Open the Application**
-   - Simply open `index.html` in Chrome 86+ or Edge 86+
+   - Simply open `TickTrack.html` in Chrome 86+ or Edge 86+
    - No installation required - works directly in your browser
 
 2. **First-Time Setup**
