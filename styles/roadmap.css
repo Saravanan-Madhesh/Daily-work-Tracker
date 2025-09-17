@@ -388,6 +388,20 @@
     font-style: italic;
 }
 
+/* New styles for holiday configuration */
+.workday-config {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.workday-config .form-group {
+    margin-bottom: 0; /* Remove default margin */
+}
+
+
 .warning-section {
     margin: 1rem 0;
 }

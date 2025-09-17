@@ -969,22 +969,22 @@ class RoadmapManager {
         this.ctx.fillText(this.projectConfig.name || 'Project Roadmap', 
                         this.canvasWidth / 2, 30);
         
-        // Days remaining
         const now = new Date();
         const endDate = new Date(this.projectConfig.endDate);
-        const daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+        const daysRemaining = this.calculateWorkingDays(now, endDate);
         
         let statusText = '';
         let statusColor = '#4a5568';
-        
+        const dayLabel = daysRemaining === 1 ? "work day" : "work days";
+
         if (daysRemaining > 0) {
-            statusText = `${daysRemaining} days remaining`;
+            statusText = `${daysRemaining} ${dayLabel} remaining`;
             statusColor = '#059669';
         } else if (daysRemaining === 0) {
             statusText = 'Due today';
             statusColor = '#d97706';
         } else {
-            statusText = `${Math.abs(daysRemaining)} days overdue`;
+            statusText = `${Math.abs(daysRemaining)} ${dayLabel} overdue`;
             statusColor = '#dc2626';
         }
         
@@ -1219,21 +1219,22 @@ class RoadmapManager {
             const startDate = new Date(config.startDate);
             const endDate = new Date(config.endDate);
             const now = new Date();
-            const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-            const elapsedDays = Math.max(0, Math.ceil((now - startDate) / (1000 * 60 * 60 * 24)));
-            const progressPercent = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)));
+
+            const totalDays = this.calculateWorkingDays(startDate, endDate);
+            const elapsedDays = this.calculateWorkingDays(startDate, now);
+            const progressPercent = totalDays > 0 ? Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100))) : 0;
             
             projectStats = `
                 <div class="project-stats">
-                    <h4>Project Statistics</h4>
+                    <h4>Project Statistics (Working Days)</h4>
                     <div class="stats-grid">
                         <div class="stat-item">
                             <div class="stat-value">${totalDays}</div>
-                            <div class="stat-label">Total Days</div>
+                            <div class="stat-label">Total Work Days</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-value">${elapsedDays}</div>
-                            <div class="stat-label">Days Elapsed</div>
+                            <div class="stat-label">Work Days Elapsed</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-value">${progressPercent}%</div>
@@ -1247,6 +1248,8 @@ class RoadmapManager {
                 </div>
             `;
         }
+
+        const holidayList = (config.customHolidays || []).join(', ');
 
         const modalContent = `
             <div class="modal-header">
@@ -1290,15 +1293,21 @@ class RoadmapManager {
                         <small class="form-help">Target completion date</small>
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Project Status</label>
-                    <select class="form-input" id="projectStatus">
-                        <option value="planning" ${config.status === 'planning' ? 'selected' : ''}>📋 Planning</option>
-                        <option value="active" ${config.status === 'active' || !config.status ? 'selected' : ''}>🚀 Active</option>
-                        <option value="on-hold" ${config.status === 'on-hold' ? 'selected' : ''}>⏸️ On Hold</option>
-                        <option value="completed" ${config.status === 'completed' ? 'selected' : ''}>✅ Completed</option>
-                    </select>
+
+                <div class="workday-config">
+                    <div class="form-group">
+                         <label class="form-label">
+                            <input type="checkbox" id="excludeWeekends" ${config.excludeWeekends ? 'checked' : ''}> 
+                            Exclude weekends from date calculations
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Custom Holidays</label>
+                        <textarea class="form-input" id="customHolidays" 
+                                  placeholder="e.g., 2024-12-25, 2025-01-01"
+                                  rows="2">${holidayList}</textarea>
+                        <small class="form-help">Add comma-separated holiday dates (YYYY-MM-DD).</small>
+                    </div>
                 </div>
                 
                 ${hasExistingMilestones ? `
@@ -1321,12 +1330,10 @@ class RoadmapManager {
         
         const modal = app.showModal(modalContent);
         
-        // Add specific class for project config modal styling
         if (modal) {
             modal.classList.add('project-config-modal');
         }
         
-        // Set up date input validation
         this.setupDateValidation();
     }
 
@@ -1352,26 +1359,32 @@ class RoadmapManager {
      */
     static async saveProjectConfig() {
         try {
-            // Get form elements
             const nameInput = document.getElementById('projectName');
             const descInput = document.getElementById('projectDescription');
             const startDateInput = document.getElementById('projectStartDate');
             const endDateInput = document.getElementById('projectEndDate');
-            const statusInput = document.getElementById('projectStatus');
-            
-            if (!nameInput || !startDateInput || !endDateInput) {
+            const excludeWeekendsInput = document.getElementById('excludeWeekends');
+            const customHolidaysInput = document.getElementById('customHolidays');
+
+            if (!nameInput || !startDateInput || !endDateInput || !excludeWeekendsInput || !customHolidaysInput) {
                 throw new Error('Required form elements not found');
             }
             
             const isExisting = !!this.projectConfig;
             const oldConfig = this.projectConfig ? { ...this.projectConfig } : null;
+
+            const customHolidays = customHolidaysInput.value
+                .split(',')
+                .map(d => d.trim())
+                .filter(d => d.match(/^\d{4}-\d{2}-\d{2}$/));
             
             const config = {
                 name: nameInput.value.trim(),
                 description: descInput ? descInput.value.trim() : '',
                 startDate: startDateInput.value,
                 endDate: endDateInput.value,
-                status: statusInput ? statusInput.value : 'active',
+                excludeWeekends: excludeWeekendsInput.checked,
+                customHolidays: customHolidays,
                 createdAt: this.projectConfig?.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
@@ -1382,56 +1395,37 @@ class RoadmapManager {
                 throw new Error(validation.errors.join('\n'));
             }
             
-            // Check milestone compatibility if dates changed
             const milestonesNeedAdjustment = await this.checkMilestoneCompatibility(config, oldConfig);
             if (milestonesNeedAdjustment.length > 0) {
                 const shouldContinue = await this.showMilestoneAdjustmentDialog(milestonesNeedAdjustment);
                 if (!shouldContinue) {
-                    return; // User cancelled
+                    return;
                 }
             }
             
-            // Save to storage using data model
-            const roadmapModel = StorageManager.createRoadmapModel({
+            const roadmapModel = {
+                ...config,
                 projectName: config.name,
-                description: config.description,
-                startDate: config.startDate,
-                endDate: config.endDate,
-                status: config.status
-            });
-            
-            // Ensure the config has the name field for consistency
+            };
+
             const finalConfig = {
                 ...roadmapModel,
                 name: roadmapModel.projectName || config.name,
-                description: config.description,
-                startDate: config.startDate,
-                endDate: config.endDate,
-                status: config.status,
-                createdAt: roadmapModel.createdAt || new Date().toISOString(),
-                updatedAt: new Date().toISOString()
             };
             
             await StorageManager.set('project_config', finalConfig);
             this.projectConfig = finalConfig;
             
-            // Adjust milestones if needed
             if (milestonesNeedAdjustment.length > 0) {
                 await this.adjustIncompatibleMilestones(milestonesNeedAdjustment, config);
             }
             
-            // Update UI
             this.updateProjectInfo();
             this.updateMilestoneList();
             
-            // Success feedback
             app.hideModal();
             const message = isExisting ? 'Project updated successfully!' : 'Project created successfully!';
             app.showSuccess(message);
-            
-            console.log('Project configuration saved:', finalConfig);
-            console.log('Config name:', finalConfig.name);
-            console.log('Config description:', finalConfig.description);
             
         } catch (error) {
             console.error('Failed to save project config:', error);
@@ -1445,16 +1439,10 @@ class RoadmapManager {
     static validateProjectConfig(config) {
         const errors = [];
         
-        // Name validation
-        if (!config.name) {
-            errors.push('Project name is required');
-        } else if (config.name.length < 3) {
-            errors.push('Project name must be at least 3 characters long');
-        } else if (config.name.length > 100) {
-            errors.push('Project name must be less than 100 characters');
-        }
+        if (!config.name) errors.push('Project name is required');
+        else if (config.name.length < 3) errors.push('Project name must be at least 3 characters long');
+        else if (config.name.length > 100) errors.push('Project name must be less than 100 characters');
         
-        // Date validation
         if (!config.startDate || !config.endDate) {
             errors.push('Start and end dates are required');
         } else {
@@ -1463,35 +1451,11 @@ class RoadmapManager {
             
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
                 errors.push('Invalid date format');
-            } else {
-                if (startDate >= endDate) {
-                    errors.push('End date must be after start date');
-                }
-                
-                // Project duration checks
-                const durationDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
-                if (durationDays < 1) {
-                    errors.push('Project must be at least 1 day long');
-                } else if (durationDays > 1825) { // 5 years
-                    errors.push('Project duration cannot exceed 5 years');
-                }
-                
-                // Date range checks
-                const now = new Date();
-                const oneYearAgo = new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000));
-                const fiveYearsFromNow = new Date(now.getTime() + (5 * 365 * 24 * 60 * 60 * 1000));
-                
-                if (startDate < oneYearAgo) {
-                    errors.push('Start date cannot be more than 1 year in the past');
-                }
-                
-                if (endDate > fiveYearsFromNow) {
-                    errors.push('End date cannot be more than 5 years in the future');
-                }
+            } else if (startDate >= endDate) {
+                errors.push('End date must be after start date');
             }
         }
         
-        // Description validation
         if (config.description && config.description.length > 1000) {
             errors.push('Description must be less than 1000 characters');
         }
@@ -1502,30 +1466,64 @@ class RoadmapManager {
         };
     }
 
+     /**
+     * Calculate working days between two dates, excluding weekends and holidays.
+     */
+    static calculateWorkingDays(d1, d2) {
+        const { excludeWeekends = false, customHolidays = [] } = this.projectConfig || {};
+        const holidays = new Set(customHolidays);
+
+        const oneDay = 24 * 60 * 60 * 1000;
+        let currentDate = new Date(d1.getTime());
+        let endDate = new Date(d2.getTime());
+        
+        // Ensure dates are at the start of the day
+        currentDate.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
+
+        let isReversed = false;
+        if (currentDate > endDate) {
+            [currentDate, endDate] = [endDate, currentDate];
+            isReversed = true;
+        }
+
+        let workDays = 0;
+        while (currentDate <= endDate) {
+            const day = currentDate.getDay();
+            const dateStr = currentDate.toISOString().split('T')[0];
+
+            let isWorkDay = true;
+            if (excludeWeekends && (day === 0 || day === 6)) {
+                isWorkDay = false;
+            }
+            if (holidays.has(dateStr)) {
+                isWorkDay = false;
+            }
+
+            if (isWorkDay) {
+                workDays++;
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        return isReversed ? -workDays : workDays;
+    }
+
+
     /**
      * Check milestone compatibility with new project dates
      */
     static async checkMilestoneCompatibility(newConfig, oldConfig) {
-        if (!this.milestones || this.milestones.length === 0) {
-            return [];
-        }
-        
-        if (!oldConfig) {
-            return []; // New project, no compatibility issues
-        }
+        if (!this.milestones || this.milestones.length === 0) return [];
+        if (!oldConfig) return [];
         
         const newStartDate = new Date(newConfig.startDate);
         const newEndDate = new Date(newConfig.endDate);
-        const incompatibleMilestones = [];
         
-        this.milestones.forEach(milestone => {
-            const milestoneDate = new Date(milestone.date);
-            if (milestoneDate < newStartDate || milestoneDate > newEndDate) {
-                incompatibleMilestones.push(milestone);
-            }
+        return this.milestones.filter(m => {
+            const milestoneDate = new Date(m.date);
+            return milestoneDate < newStartDate || milestoneDate > newEndDate;
         });
-        
-        return incompatibleMilestones;
     }
 
     /**
@@ -1536,8 +1534,7 @@ class RoadmapManager {
             .map(m => `• ${m.title} (${this.formatDate(m.date)})`)
             .join('\n');
         
-        const message = `The following ${incompatibleMilestones.length} milestone(s) are outside the new project date range:\n\n${milestoneList}\n\nThese milestones will be automatically adjusted or removed. Continue?`;
-        
+        const message = `The following ${incompatibleMilestones.length} milestone(s) are outside the new project date range:\n\n${milestoneList}\n\nThese milestones will be automatically adjusted. Continue?`;
         return confirm(message);
     }
 
@@ -1545,36 +1542,23 @@ class RoadmapManager {
      * Adjust incompatible milestones
      */
     static async adjustIncompatibleMilestones(incompatibleMilestones, newConfig) {
-        const newStartDate = new Date(newConfig.startDate);
-        const newEndDate = new Date(newConfig.endDate);
         let adjustedCount = 0;
-        let removedCount = 0;
-        
         for (const milestone of incompatibleMilestones) {
             const milestoneDate = new Date(milestone.date);
-            
-            // Try to adjust milestone date
-            if (milestoneDate < newStartDate) {
-                // Move to start date
+            if (milestoneDate < new Date(newConfig.startDate)) {
                 milestone.date = newConfig.startDate;
-                milestone.updatedAt = new Date().toISOString();
-                await StorageManager.saveToStore('milestones', milestone);
-                adjustedCount++;
-            } else if (milestoneDate > newEndDate) {
-                // Move to end date
+            } else if (milestoneDate > new Date(newConfig.endDate)) {
                 milestone.date = newConfig.endDate;
-                milestone.updatedAt = new Date().toISOString();
-                await StorageManager.saveToStore('milestones', milestone);
-                adjustedCount++;
             }
+            milestone.updatedAt = new Date().toISOString();
+            await StorageManager.saveToStore('milestones', milestone);
+            adjustedCount++;
         }
         
-        // Reload milestones
         await this.loadProjectData();
         
-        if (adjustedCount > 0 || removedCount > 0) {
-            const message = `Milestone adjustment complete: ${adjustedCount} adjusted, ${removedCount} removed`;
-            app.showSuccess(message);
+        if (adjustedCount > 0) {
+            app.showSuccess(`Adjusted ${adjustedCount} milestone(s) to fit the new project timeline.`);
         }
     }
 
@@ -1584,7 +1568,6 @@ class RoadmapManager {
     static showMilestoneModal(clickX) {
         if (!this.projectConfig) return;
         
-        // Calculate date based on click position
         const roadWidth = this.canvasWidth - 100;
         const roadX = 50;
         const position = (clickX - roadX) / roadWidth;
@@ -1636,64 +1619,33 @@ class RoadmapManager {
             const dateInput = document.getElementById('milestoneDate');
             const descriptionInput = document.getElementById('milestoneDescription');
             
-            if (!titleInput || !dateInput) {
-                throw new Error('Form elements not found');
-            }
+            if (!titleInput || !dateInput) throw new Error('Form elements not found');
             
             const milestoneData = {
                 title: titleInput.value.trim(),
                 date: dateInput.value,
                 description: descriptionInput ? descriptionInput.value.trim() : '',
-                projectId: 'default',
                 completed: false,
-                completedAt: null
             };
             
-            // Use storage manager data model
             const milestone = StorageManager.createMilestoneModel(milestoneData);
             
-            // Validation using storage manager
             const validation = StorageManager.validateMilestoneData(milestone);
-            if (!validation.isValid) {
-                throw new Error(validation.errors.join(', '));
-            }
+            if (!validation.isValid) throw new Error(validation.errors.join(', '));
             
-            // Additional validation for date range
             const milestoneDate = new Date(milestone.date);
-            const startDate = new Date(this.projectConfig.startDate);
-            const endDate = new Date(this.projectConfig.endDate);
-            
-            if (milestoneDate < startDate || milestoneDate > endDate) {
+            if (milestoneDate < new Date(this.projectConfig.startDate) || milestoneDate > new Date(this.projectConfig.endDate)) {
                 throw new Error('Milestone date must be within project timeline');
             }
             
-            // Check for duplicate milestones on same date
-            const existingOnSameDate = this.milestones.find(m => m.date === milestone.date);
-            if (existingOnSameDate) {
-                if (!confirm(`A milestone already exists on ${milestone.date}. Do you want to create another one?`)) {
-                    return;
-                }
-            }
-            
-            // Save to storage
             await StorageManager.saveToStore('milestones', milestone);
-            
-            // Add to local array
             this.milestones.push(milestone);
-            
-            // Sort milestones by date
             this.milestones.sort((a, b) => new Date(a.date) - new Date(b.date));
-            
-            // Clear milestone bounds to force recalculation
             this.milestoneBounds = null;
             
-            // Update milestone list display
             this.updateMilestoneList();
-            
             app.hideModal();
             app.showSuccess('Milestone added successfully!');
-            
-            console.log('Milestone created:', milestone);
             
         } catch (error) {
             console.error('Failed to save milestone:', error);
@@ -1726,47 +1678,25 @@ class RoadmapManager {
      * Get progress information based on current date
      */
     static getProgressInfo() {
-        if (!this.projectConfig) {
-            return { status: 'Not Set', color: '#718096' };
-        }
-
+        if (!this.projectConfig) return { status: 'Not Set', color: '#718096' };
+        
         const now = new Date();
         const startDate = new Date(this.projectConfig.startDate);
         const endDate = new Date(this.projectConfig.endDate);
         
         if (now < startDate) {
-            const daysUntilStart = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
-            return { 
-                status: `Starts in ${daysUntilStart} days`, 
-                color: '#059669' 
-            };
+            const daysUntilStart = this.calculateWorkingDays(now, startDate);
+            return { status: `Starts in ${daysUntilStart} work days`, color: '#059669' };
         } else if (now > endDate) {
-            const daysOverdue = Math.ceil((now - endDate) / (1000 * 60 * 60 * 24));
-            return { 
-                status: `${daysOverdue} days overdue`, 
-                color: '#dc2626' 
-            };
+            const daysOverdue = this.calculateWorkingDays(endDate, now);
+            return { status: `${daysOverdue} work days overdue`, color: '#dc2626' };
         } else {
-            const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-            const daysElapsed = Math.ceil((now - startDate) / (1000 * 60 * 60 * 24));
-            const daysRemaining = totalDays - daysElapsed;
-            
-            if (daysRemaining <= 3) {
-                return { 
-                    status: `${daysRemaining} days left`, 
-                    color: '#dc2626' 
-                };
-            } else if (daysRemaining <= 7) {
-                return { 
-                    status: `${daysRemaining} days left`, 
-                    color: '#d97706' 
-                };
-            } else {
-                return { 
-                    status: `${daysRemaining} days left`, 
-                    color: '#059669' 
-                };
-            }
+            const daysRemaining = this.calculateWorkingDays(now, endDate);
+            const label = Math.abs(daysRemaining) === 1 ? 'work day' : 'work days';
+            let color = '#059669';
+            if (daysRemaining <= 3) color = '#dc2626';
+            else if (daysRemaining <= 7) color = '#d97706';
+            return { status: `${daysRemaining} ${label} left`, color: color };
         }
     }
 
@@ -1774,20 +1704,18 @@ class RoadmapManager {
      * Add rounded rectangle support for older browsers
      */
     static addRoundRectSupport() {
-        if (!CanvasRenderingContext2D.prototype.roundRect) {
-            CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
-                if (width < 2 * radius) radius = width / 2;
-                if (height < 2 * radius) radius = height / 2;
-                
-                this.beginPath();
-                this.moveTo(x + radius, y);
-                this.arcTo(x + width, y, x + width, y + height, radius);
-                this.arcTo(x + width, y + height, x, y + height, radius);
-                this.arcTo(x, y + height, x, y, radius);
-                this.arcTo(x, y, x + width, y, radius);
-                this.closePath();
-            };
-        }
+        if (CanvasRenderingContext2D.prototype.roundRect) return;
+        CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+            if (w < 2 * r) r = w / 2;
+            if (h < 2 * r) r = h / 2;
+            this.beginPath();
+            this.moveTo(x + r, y);
+            this.arcTo(x + w, y, x + w, y + h, r);
+            this.arcTo(x + w, y + h, x, y + h, r);
+            this.arcTo(x, y + h, x, y, r);
+            this.arcTo(x, y, x + w, y, r);
+            this.closePath();
+        };
     }
 
     /**
@@ -1795,31 +1723,8 @@ class RoadmapManager {
      */
     static formatDateWithRelative(dateString) {
         if (!dateString) return '';
-        
         const date = new Date(dateString);
-        const now = new Date();
-        const diffTime = date - now;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        const formatted = date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
-        });
-        
-        if (diffDays === 0) {
-            return `${formatted} (Today)`;
-        } else if (diffDays === 1) {
-            return `${formatted} (Tomorrow)`;
-        } else if (diffDays === -1) {
-            return `${formatted} (Yesterday)`;
-        } else if (diffDays > 0 && diffDays <= 7) {
-            return `${formatted} (${diffDays} days)`;
-        } else if (diffDays < 0 && diffDays >= -7) {
-            return `${formatted} (${Math.abs(diffDays)} days ago)`;
-        }
-        
-        return formatted;
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
     /**
@@ -1829,13 +1734,9 @@ class RoadmapManager {
         const currentDateElement = document.getElementById('currentDate');
         if (currentDateElement) {
             const now = new Date();
-            const options = { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric',
-                weekday: 'short'
-            };
-            currentDateElement.textContent = now.toLocaleDateString('en-US', options);
+            currentDateElement.textContent = now.toLocaleDateString('en-US', { 
+                year: 'numeric', month: 'short', day: 'numeric', weekday: 'short'
+            });
         }
     }
 
@@ -1843,10 +1744,8 @@ class RoadmapManager {
      * Set up milestone-related event listeners
      */
     static setupMilestoneEventListeners() {
-        // Canvas click for milestone interaction
         this.canvas.addEventListener('click', this.handleCanvasClick.bind(this));
         
-        // Add milestone button
         const addMilestoneBtn = document.getElementById('addMilestoneBtn');
         if (addMilestoneBtn) {
             addMilestoneBtn.addEventListener('click', () => {
@@ -1877,45 +1776,32 @@ class RoadmapManager {
             return;
         }
 
-        // Sort milestones by date
         const sortedMilestones = [...this.milestones].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        const milestonesHTML = sortedMilestones.map((milestone, index) => {
+        const milestonesHTML = sortedMilestones.map((milestone) => {
+            const index = this.milestones.indexOf(milestone);
             const milestoneDate = new Date(milestone.date);
             const now = new Date();
             const isCompleted = milestone.completed;
-            const isOverdue = !isCompleted && now > milestoneDate;
-            const daysFromNow = Math.ceil((milestoneDate - now) / (1000 * 60 * 60 * 24));
+            const daysDiff = this.calculateWorkingDays(now, milestoneDate);
+            const dayLabel = Math.abs(daysDiff) === 1 ? 'work day' : 'work days';
 
             let statusClass = 'upcoming';
             let statusText = '';
             let statusIcon = '⏰';
 
             if (isCompleted) {
-                statusClass = 'completed';
-                statusText = 'Completed';
-                statusIcon = '✅';
-            } else if (isOverdue) {
-                statusClass = 'overdue';
-                statusText = `${Math.abs(daysFromNow)} days overdue`;
-                statusIcon = '⚠️';
-            } else if (daysFromNow === 0) {
-                statusClass = 'today';
-                statusText = 'Due today';
-                statusIcon = '🎯';
-            } else if (daysFromNow === 1) {
-                statusText = 'Due tomorrow';
-                statusIcon = '⏰';
-            } else if (daysFromNow <= 7) {
-                statusText = `${daysFromNow} days left`;
-                statusIcon = '⏰';
+                statusClass = 'completed'; statusText = 'Completed'; statusIcon = '✅';
+            } else if (daysDiff < 0) {
+                statusClass = 'overdue'; statusText = `${Math.abs(daysDiff)} ${dayLabel} overdue`; statusIcon = '⚠️';
+            } else if (daysDiff === 0) {
+                statusClass = 'today'; statusText = 'Due today'; statusIcon = '🎯';
             } else {
-                statusText = `${daysFromNow} days left`;
-                statusIcon = '📅';
+                statusText = `${daysDiff} ${dayLabel} left`;
             }
 
             return `
-                <div class="milestone-item ${statusClass}" onclick="RoadmapManager.showMilestoneDetailsModal(RoadmapManager.milestones[${this.milestones.indexOf(milestone)}], ${this.milestones.indexOf(milestone)})">
+                <div class="milestone-item ${statusClass}" onclick="RoadmapManager.showMilestoneDetailsModal(RoadmapManager.milestones[${index}], ${index})">
                     <div class="milestone-content">
                         <div class="milestone-flag">${statusIcon}</div>
                         <div class="milestone-details">
@@ -1923,10 +1809,6 @@ class RoadmapManager {
                             <div class="milestone-date">${this.formatDate(milestone.date)} - ${statusText}</div>
                             ${milestone.description ? `<div class="milestone-description">${milestone.description.substring(0, 100)}${milestone.description.length > 100 ? '...' : ''}</div>` : ''}
                         </div>
-                    </div>
-                    <div class="milestone-actions">
-                        <button class="milestone-edit" onclick="event.stopPropagation(); RoadmapManager.showMilestoneDetailsModal(RoadmapManager.milestones[${this.milestones.indexOf(milestone)}], ${this.milestones.indexOf(milestone)})">Edit</button>
-                        <button class="milestone-delete" onclick="event.stopPropagation(); RoadmapManager.deleteMilestone(${this.milestones.indexOf(milestone)})">Delete</button>
                     </div>
                 </div>
             `;
@@ -1947,22 +1829,17 @@ class RoadmapManager {
                 <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="warning-section">
-                    <div class="reset-warning">
-                        <h4>This action will permanently delete:</h4>
-                        <ul>
-                            <li>Current project configuration</li>
-                            <li>All ${milestoneCount} milestone(s)</li>
-                            <li>Project progress history</li>
-                        </ul>
-                        <p><strong>This action cannot be undone.</strong></p>
-                    </div>
+                <div class="reset-warning">
+                    <h4>This action will permanently delete:</h4>
+                    <ul>
+                        <li>Current project configuration</li>
+                        <li>All ${milestoneCount} milestone(s)</li>
+                    </ul>
+                    <p><strong>This action cannot be undone.</strong></p>
                 </div>
-                
-                <div class="form-group">
+                <div class="form-group" style="margin-top: 1rem;">
                     <label class="form-label">Type "RESET" to confirm:</label>
-                    <input type="text" class="form-input" id="resetConfirmation" 
-                           placeholder="Type RESET to confirm">
+                    <input type="text" class="form-input" id="resetConfirmation" placeholder="Type RESET to confirm">
                 </div>
             </div>
             <div class="modal-footer">
@@ -1970,7 +1847,6 @@ class RoadmapManager {
                 <button class="btn btn-danger" onclick="RoadmapManager.performReset()">Reset Project</button>
             </div>
         `;
-        
         app.showModal(confirmationContent);
     }
 
@@ -1980,184 +1856,36 @@ class RoadmapManager {
     static async performReset() {
         try {
             const confirmationInput = document.getElementById('resetConfirmation');
-            if (!confirmationInput || confirmationInput.value !== 'RESET') {
+            if (confirmationInput?.value !== 'RESET') {
                 app.showError('Please type "RESET" to confirm');
                 return;
             }
             
-            console.log('Performing project reset...');
-            
-            // Clear project configuration
             await StorageManager.remove('project_config');
             this.projectConfig = null;
-            
-            // Delete all milestones
-            if (this.milestones && this.milestones.length > 0) {
+
+            if (this.milestones.length > 0) {
                 for (const milestone of this.milestones) {
                     await StorageManager.deleteFromStore('milestones', milestone.id);
                 }
             }
             this.milestones = [];
-            
-            // Clear milestone bounds
             this.milestoneBounds = null;
             
-            // Reset car position
-            this.carPosition = 0;
-            this.carMovementOffset = 0;
-            
-            // Update UI
             this.updateProjectInfo();
             this.updateMilestoneList();
-            
-            // Force canvas redraw
             this.draw();
             
             app.hideModal();
-            app.showSuccess('Project reset successfully! You can now create a new project.');
-            
-            console.log('Project reset completed');
+            app.showSuccess('Project reset successfully!');
             
         } catch (error) {
             console.error('Failed to reset project:', error);
             app.showError('Failed to reset project: ' + error.message);
         }
     }
-
-    /**
-     * Export project configuration and milestones
-     */
-    static async exportProjectData() {
-        try {
-            if (!this.projectConfig) {
-                throw new Error('No project configuration to export');
-            }
-            
-            const exportData = {
-                version: '1.0',
-                exportDate: new Date().toISOString(),
-                projectConfig: this.projectConfig,
-                milestones: this.milestones || [],
-                statistics: this.getProjectStatistics()
-            };
-            
-            const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${this.projectConfig.name.replace(/[^a-z0-9]/gi, '_')}_roadmap_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            URL.revokeObjectURL(url);
-            app.showSuccess('Project data exported successfully!');
-            
-        } catch (error) {
-            console.error('Failed to export project:', error);
-            app.showError('Failed to export project: ' + error.message);
-        }
-    }
-
-    /**
-     * Import project configuration and milestones
-     */
-    static async importProjectData(file) {
-        try {
-            const text = await file.text();
-            const importData = JSON.parse(text);
-            
-            // Validate import data
-            if (!importData.projectConfig) {
-                throw new Error('Invalid import file: missing project configuration');
-            }
-            
-            // Confirm import
-            const existingProject = this.projectConfig?.name || 'None';
-            const message = `Import project "${importData.projectConfig.name}"?\n\nThis will replace:\n- Current project: ${existingProject}\n- All existing milestones\n\nContinue?`;
-            
-            if (!confirm(message)) {
-                return;
-            }
-            
-            // Import project configuration
-            this.projectConfig = importData.projectConfig;
-            await StorageManager.set('project_config', this.projectConfig);
-            
-            // Clear existing milestones
-            if (this.milestones && this.milestones.length > 0) {
-                for (const milestone of this.milestones) {
-                    await StorageManager.deleteFromStore('milestones', milestone.id);
-                }
-            }
-            
-            // Import milestones
-            this.milestones = [];
-            if (importData.milestones && importData.milestones.length > 0) {
-                for (const milestone of importData.milestones) {
-                    // Generate new ID to avoid conflicts
-                    const newMilestone = StorageManager.createMilestoneModel(milestone);
-                    await StorageManager.saveToStore('milestones', newMilestone);
-                    this.milestones.push(newMilestone);
-                }
-            }
-            
-            // Update UI
-            this.updateProjectInfo();
-            this.updateMilestoneList();
-            this.draw();
-            
-            app.showSuccess(`Project "${importData.projectConfig.name}" imported successfully!`);
-            
-        } catch (error) {
-            console.error('Failed to import project:', error);
-            app.showError('Failed to import project: ' + error.message);
-        }
-    }
-
-    /**
-     * Get project statistics
-     */
-    static getProjectStatistics() {
-        if (!this.projectConfig) {
-            return null;
-        }
-        
-        const startDate = new Date(this.projectConfig.startDate);
-        const endDate = new Date(this.projectConfig.endDate);
-        const now = new Date();
-        
-        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        const elapsedDays = Math.max(0, Math.ceil((now - startDate) / (1000 * 60 * 60 * 24)));
-        const remainingDays = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
-        const progressPercent = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)));
-        
-        const completedMilestones = this.milestones?.filter(m => m.completed).length || 0;
-        const totalMilestones = this.milestones?.length || 0;
-        const overdueMilestones = this.milestones?.filter(m => !m.completed && new Date(m.date) < now).length || 0;
-        
-        return {
-            totalDays,
-            elapsedDays,
-            remainingDays,
-            progressPercent,
-            totalMilestones,
-            completedMilestones,
-            overdueMilestones,
-            milestonesCompletionRate: totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0
-        };
-    }
-
-    /**
-     * Clean up resources
-     */
-    static cleanup() {
-        this.stopAnimation();
-        this.isInitialized = false;
-    }
 }
 
-// Export for module usage
 if (typeof window !== 'undefined') {
     window.RoadmapManager = RoadmapManager;
 }
