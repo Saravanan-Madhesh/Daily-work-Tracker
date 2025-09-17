@@ -829,12 +829,12 @@ class FileExportManager {
     formatTodayAsText(data) {
         let content = '📊 DAILY JOURNAL\n';
         content += '═'.repeat(50) + '\n\n';
-        content += `📅 Date: ${new Date().toDateString()}\n`;
-        content += `⏰ Generated: ${new Date().toLocaleString()}\n\n`;
+        content += `📅 Date: ${new Date().toDateString()}`;
+        content += `     ⏰ Generated: ${new Date().toLocaleString()}\n\n`;
 
         // Checklist section
         if (data.checklist && data.checklist.length > 0) {
-            content += '✅ TODAY\'S CHECKLIST STATUS\n';
+            content += 'TODAY\'S CHECKLIST STATUS\n';
             content += '─'.repeat(30) + '\n';
             
             const completed = data.checklist.filter(item => item.completed).length;
@@ -849,7 +849,7 @@ class FileExportManager {
             if (completedItems.length > 0) {
                 content += '✅ COMPLETED:\n';
                 completedItems.forEach(item => {
-                    content += `  ✔️ ${item.text || 'Untitled item'}\n`;
+                    content += `  ✔️ ${item.text || 'Untitled item'}`;
                     if (item.completedAt) {
                         content += `     Completed at: ${new Date(item.completedAt).toLocaleTimeString()}\n`;
                     }
@@ -878,13 +878,13 @@ class FileExportManager {
             data.todos.forEach((todo, index) => {
                 content += `${index + 1}. ✔️ ${todo.text || 'Untitled Todo'}\n`;
                 if (todo.priority && todo.priority !== 'medium') {
-                    content += `   Priority: ${todo.priority.charAt(0).toUpperCase() + todo.priority.slice(1)}\n`;
+                    content += `     Priority: ${todo.priority.charAt(0).toUpperCase() + todo.priority.slice(1)}`;
                 }
                 if (todo.category && todo.category.trim()) {
-                    content += `   Category: ${todo.category}\n`;
+                    content += `     Category: ${todo.category}`;
                 }
                 if (todo.completedAt) {
-                    content += `   Completed at: ${new Date(todo.completedAt).toLocaleTimeString()}\n`;
+                    content += `     Completed at: ${new Date(todo.completedAt).toLocaleTimeString()}\n`;
                 }
                 if (todo.description && todo.description.trim()) {
                     content += `   Description: ${todo.description}\n`;
@@ -904,11 +904,11 @@ class FileExportManager {
             
             data.meetings.forEach((meeting, index) => {
                 content += `${index + 1}. 👩‍💻 ${meeting.title || 'Untitled Meeting'}\n`;
-                content += `     Date: ${meeting.date ? new Date(meeting.date).toDateString() : 'No date'}\n`;
-                content += `     Time: ${meeting.time || 'No time specified'}\n`;
+                content += `     Date: ${meeting.date ? new Date(meeting.date).toDateString() : 'No date'}`;
+                content += `     Time: ${meeting.time || 'No time specified'}`;
                 
-                if (meeting.attendees && Array.isArray(meeting.attendees) && meeting.attendees.length > 0) {
-                    content += `   👥 Attendees: ${meeting.attendees.join(', ')}\n`;
+                if (meeting.attendees) {
+                    content += `   👥 Attendees: ${meeting.attendees}\n`;
                 }
                 
                 if (meeting.duration) {
@@ -916,12 +916,12 @@ class FileExportManager {
                 }
                 
                 if (meeting.notes && meeting.notes.trim()) {
-                    content += `   📝 Details:\n`;
+                    content += `Details📝:\n`;
                     content += `   ${meeting.notes.replace(/\n/g, '\n   ')}\n`;
                 }
                 
                 if (meeting.actionItems && Array.isArray(meeting.actionItems) && meeting.actionItems.length > 0) {
-                    content += `   🎯 Action Items:\n`;
+                    content += `Action Items🎯:\n`;
                     meeting.actionItems.forEach(action => {
                         if (action && action.trim()) {
                             content += `   • ${action}\n`;
