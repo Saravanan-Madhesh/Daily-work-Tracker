@@ -849,9 +849,9 @@ class FileExportManager {
             if (completedItems.length > 0) {
                 content += '✅ COMPLETED:\n';
                 completedItems.forEach(item => {
-                    content += `  ✅ ${item.text || 'Untitled item'}\n`;
+                    content += `  ✔️ ${item.text || 'Untitled item'}\n`;
                     if (item.completedAt) {
-                        content += `     ⏰ Completed at: ${new Date(item.completedAt).toLocaleTimeString()}\n`;
+                        content += `     Completed at: ${new Date(item.completedAt).toLocaleTimeString()}\n`;
                     }
                 });
                 content += '\n';
@@ -876,7 +876,7 @@ class FileExportManager {
             content += '─'.repeat(20) + '\n';
             
             data.todos.forEach((todo, index) => {
-                content += `${index + 1}. ✅ ${todo.text || 'Untitled Todo'}\n`;
+                content += `${index + 1}. ✔️ ${todo.text || 'Untitled Todo'}\n`;
                 if (todo.priority && todo.priority !== 'medium') {
                     content += `   Priority: ${todo.priority.charAt(0).toUpperCase() + todo.priority.slice(1)}\n`;
                 }
@@ -903,20 +903,20 @@ class FileExportManager {
             content += '─'.repeat(35) + '\n';
             
             data.meetings.forEach((meeting, index) => {
-                content += `${index + 1}. ✅ ${meeting.title || 'Untitled Meeting'}\n`;
-                content += `   📅 Date: ${meeting.date ? new Date(meeting.date).toDateString() : 'No date'}\n`;
-                content += `   ⏰ Time: ${meeting.time || 'No time specified'}\n`;
+                content += `${index + 1}. 👩‍💻 ${meeting.title || 'Untitled Meeting'}\n`;
+                content += `     Date: ${meeting.date ? new Date(meeting.date).toDateString() : 'No date'}\n`;
+                content += `     Time: ${meeting.time || 'No time specified'}\n`;
                 
                 if (meeting.attendees && Array.isArray(meeting.attendees) && meeting.attendees.length > 0) {
                     content += `   👥 Attendees: ${meeting.attendees.join(', ')}\n`;
                 }
                 
                 if (meeting.duration) {
-                    content += `   ⏱️ Duration: ${meeting.duration} minutes\n`;
+                    content += `   Duration: ${meeting.duration} minutes\n`;
                 }
                 
                 if (meeting.notes && meeting.notes.trim()) {
-                    content += `   📝 Notes:\n`;
+                    content += `   📝 Details:\n`;
                     content += `   ${meeting.notes.replace(/\n/g, '\n   ')}\n`;
                 }
                 
