@@ -135,6 +135,11 @@ class TodosManager {
             addBtn.addEventListener('click', this.showAddTodoModal.bind(this));
         }
 
+        const bulkAddBtn = document.getElementById('bulkAddTodo');
+        if (bulkAddBtn) {
+            bulkAddBtn.addEventListener('click', this.showBulkAddModal.bind(this));
+        }
+
         // Bulk actions button
         const bulkActionsBtn = document.getElementById('bulkActions');
         if (bulkActionsBtn) {
@@ -489,6 +494,16 @@ class TodosManager {
         }, 100);
     }
 
+    static showBulkAddModal() {
+        const modalContent = this.createBulkAddModal();
+        app.showModal(modalContent);
+
+        setTimeout(() => {
+            const textInput = document.getElementById('bulkTodoText');
+            if (textInput) textInput.focus();
+        }, 100);
+    }
+
     /**
      * Show edit todo modal
      */
@@ -615,9 +630,100 @@ class TodosManager {
         `;
     }
 
+    static createBulkAddModal() {
+        return `
+            <div class="modal-header">
+                <h3 class="modal-title">Bulk Add Todos</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Todo Items</label>
+                    <textarea class="form-input" id="bulkTodoText" 
+                              placeholder="Enter each todo on a new line..."
+                              rows="10"></textarea>
+                    <small class="form-help">Enter one todo per line. Each line will be saved as a separate todo item.</small>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" id="bulkTodoPriority">
+                            <option value="low">🟢 Low</option>
+                            <option value="medium" selected>🟡 Medium</option>
+                            <option value="high">🔴 High</option>
+                        </select>
+                        <small class="form-help">Set priority for all items.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-input" id="bulkTodoDueDate" 
+                               min="${StorageManager.getCurrentDateString()}"
+                               max="${this.getDaysFromNow(365)}">
+                        <small class="form-help">This due date will be applied to all todos.</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="app.hideModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="TodosManager.addBulkTodos()">Add Todos</button>
+            </div>
+        `;
+    }
+
     /**
      * Add new todo
      */
+    static async addBulkTodos() {
+        try {
+            const bulkText = document.getElementById('bulkTodoText').value.trim();
+            const dueDate = document.getElementById('bulkTodoDueDate').value;
+            const priority = document.getElementById('bulkTodoPriority').value;
+
+            if (!bulkText) {
+                app.showError('Please enter at least one todo item.');
+                return;
+            }
+
+            const lines = bulkText.split('\n').filter(line => line.trim() !== '');
+            let addedCount = 0;
+
+            for (const line of lines) {
+                const todoData = {
+                    text: line,
+                    description: '',
+                    priority: priority,
+                    category: '',
+                    date: StorageManager.getCurrentDateString(),
+                    dueDate: dueDate || null,
+                    carryForward: true,
+                    completed: false
+                };
+
+                const todo = StorageManager.createTodoModel(todoData);
+                const validation = StorageManager.validateTodoData(todo);
+
+                if (validation.isValid) {
+                    await StorageManager.saveToStore('todos', todo);
+                    if (this.shouldShowTodo(todo)) {
+                        this.todoItems.push(todo);
+                    }
+                    addedCount++;
+                }
+            }
+
+            this.sortTodos();
+            this.renderTodoItems();
+            app.hideModal();
+            app.showSuccess(`${addedCount} todos added successfully!`);
+
+        } catch (error) {
+            console.error('Failed to add bulk todos:', error);
+            app.showError('An error occurred while adding bulk todos.');
+        }
+    }
+
+
     static async addTodo() {
         try {
             const formData = this.getTodoFormData();
