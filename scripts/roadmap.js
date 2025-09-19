@@ -1692,7 +1692,7 @@ class RoadmapManager {
             return { status: `${daysOverdue} work days overdue`, color: '#dc2626' };
         } else {
             const daysRemaining = this.calculateWorkingDays(now, endDate);
-            const label = Math.abs(daysRemaining) === 1 ? 'work day' : 'work days';
+            const label = Math.abs(daysRemaining) === 1 ? 'day' : 'days';
             let color = '#059669';
             if (daysRemaining <= 3) color = '#dc2626';
             else if (daysRemaining <= 7) color = '#d97706';

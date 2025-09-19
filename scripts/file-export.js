@@ -124,6 +124,12 @@ class FileExportManager {
                             </div>
                         </div>
 
+                        <!-- Additional Notes -->
+                        <div class="setting-group">
+                            <label for="additionalNotes">Additional Notes:</label>
+                            <textarea id="additionalNotes" class="form-control" rows="3" placeholder="Add any other notes for today's journal..."></textarea>
+                        </div>
+
                         <!-- Export Format Selection -->
                         <div class="setting-group">
                             <label for="exportFormat">Export Format:</label>
@@ -256,6 +262,7 @@ class FileExportManager {
      */
     async collectTodayData() {
         const today = new Date().toISOString().split('T')[0];
+        const additionalNotesElement = document.getElementById('additionalNotes');
         const data = {
             exportInfo: {
                 generatedAt: new Date().toISOString(),
@@ -264,7 +271,8 @@ class FileExportManager {
             },
             checklist: [],
             todos: [],
-            meetings: []
+            meetings: [],
+            additionalNotes: additionalNotesElement ? additionalNotesElement.value : ''
         };
 
         try {
@@ -936,6 +944,13 @@ class FileExportManager {
             content += 'No meetings with notes completed today.\n\n';
         }
 
+        // Additional Notes section
+        if (data.additionalNotes && data.additionalNotes.trim()) {
+            content += '📌 ADDITIONAL NOTES\n';
+            content += '─'.repeat(25) + '\n';
+            content += `${data.additionalNotes}\n\n`;
+        }
+
         // Summary
         content += '📊 DAILY SUMMARY\n';
         content += '─'.repeat(20) + '\n';
@@ -1101,6 +1116,18 @@ class FileExportManager {
             html += '<p>No meetings with notes completed today.</p>';
         }
         html += '</div>';
+
+        // Additional Notes Section
+        if (data.additionalNotes && data.additionalNotes.trim()) {
+            html += `
+    <div class="section">
+        <h2>📌 Additional Notes</h2>
+        <div class="item">
+            <div class="item-notes">${data.additionalNotes.replace(/\n/g, '<br>')}</div>
+        </div>
+    </div>
+            `;
+        }
 
         // Summary section
         html += `
