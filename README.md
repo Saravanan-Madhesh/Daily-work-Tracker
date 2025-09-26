@@ -64,8 +64,9 @@ Daily Work Tracker is a **privacy-first**, **offline-capable** productivity appl
 - **Track Progress:** Watch the car animation move as time progresses
 - **Visual Status:** See color-coded milestones (completed, upcoming, overdue)
 
-<img width="1046" height="432" alt="image" src="https://github.com/user-attachments/assets/5bec05bd-71ec-4d6d-93a6-19f8e496ce03" />
-<img width="480" height="630" alt="image" src="https://github.com/user-attachments/assets/c0b1a2d9-ed55-477b-9ffb-420a7b76ef57" />
+<img width="1366" height="627" alt="image" src="https://github.com/user-attachments/assets/ba295024-ba4b-42df-84d0-4e88715b3641" />
+
+<img width="1366" height="654" alt="image" src="https://github.com/user-attachments/assets/8e1e13f5-6909-4b2a-86c6-3b5da3d81411" />
 
 **Best Practices:**
 - Set realistic project timelines
@@ -159,6 +160,13 @@ Daily Work Tracker is a **privacy-first**, **offline-capable** productivity appl
 - Improve journal readability and tracking.  
 
 <img width="591" height="775" alt="image" src="https://github.com/user-attachments/assets/75bfc65f-28c3-467d-a542-d49378c2f048" />
+
+## How it improved my productivity
+- I no longer stress about journaling at the end of the day
+- I stay more focused and accountable throughout the day
+- I’ve reduced missed follow-ups and forgotten tasks
+- I can clearly see what I’ve accomplished and what’s pending
+- My daily reports are more detailed and accurate—without extra effort!
 
 
 ## ⌨️ Keyboard Shortcuts
