@@ -1,4 +1,4 @@
-# Daily Work Tracker 🚀
+# TickTrack [Tick it, Track it] ✔️
 
 A comprehensive local web application designed for Team Leaders (TLs) and team members to effectively track daily work progress with visual roadmaps, intelligent checklists, smart todo management, meeting tracking, and automated journal generation.
 
